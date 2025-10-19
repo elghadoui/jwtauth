@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -16,6 +16,8 @@ import {
     ChevronDown,
     Moon,
     Sun,
+    ChevronsLeft,
+    ChevronsRight,
 } from 'lucide-react';
 
 const Layout = () => {
@@ -25,10 +27,27 @@ const Layout = () => {
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileDropdown, setProfileDropdown] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [hoveredItem, setHoveredItem] = useState(null);
 
     // Responsive hooks
     const isDesktop = useMediaQuery('(min-width: 1024px)');
     const isTablet = useMediaQuery('(min-width: 768px)');
+
+    // Charger l'état de la sidebar depuis localStorage
+    useEffect(() => {
+        const saved = localStorage.getItem('sidebarCollapsed');
+        if (saved !== null) {
+            setIsSidebarCollapsed(JSON.parse(saved));
+        }
+    }, []);
+
+    // Toggle sidebar collapse (desktop only)
+    const toggleSidebarCollapse = () => {
+        const newState = !isSidebarCollapsed;
+        setIsSidebarCollapsed(newState);
+        localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+    };
 
     const menuItems = [
         { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -44,6 +63,11 @@ const Layout = () => {
 
     const isActive = (path) => location.pathname === path;
 
+    // Calculer la largeur de la sidebar
+    const sidebarWidth = isDesktop
+        ? (isSidebarCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width-expanded)')
+        : '16rem';
+
     return (
         <div style={{ display: 'flex', height: '100vh', backgroundColor: 'var(--bg-primary)' }}>
             {/* Sidebar */}
@@ -53,24 +77,31 @@ const Layout = () => {
                     top: 0,
                     left: 0,
                     bottom: 0,
-                    width: '16rem',
+                    width: sidebarWidth,
                     backgroundColor: 'var(--bg-secondary)',
                     borderRight: '1px solid var(--border-color)',
                     transform: sidebarOpen ? 'translateX(0)' : isDesktop ? 'translateX(0)' : 'translateX(-100%)',
-                    transition: 'transform 0.3s ease-in-out',
+                    transition: 'width var(--sidebar-transition), transform 0.3s ease-in-out',
                     zIndex: 50,
+                    overflow: 'hidden',
                 }}
             >
                 {/* Logo */}
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
+                    justifyContent: isDesktop && isSidebarCollapsed ? 'center' : 'space-between',
                     height: '4rem',
-                    padding: '0 1.5rem',
-                    borderBottom: '1px solid var(--border-color)'
+                    padding: isDesktop && isSidebarCollapsed ? '0 1rem' : '0 1.5rem',
+                    borderBottom: '1px solid var(--border-color)',
+                    transition: 'padding var(--sidebar-transition)'
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        overflow: 'hidden'
+                    }}>
                         <div style={{
                             width: '2rem',
                             height: '2rem',
@@ -78,51 +109,131 @@ const Layout = () => {
                             borderRadius: '0.5rem',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            flexShrink: 0
                         }}>
                             <span style={{ color: 'white', fontWeight: 'bold', fontSize: '1.125rem' }}>S</span>
                         </div>
-                        <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>Sneat</span>
+                        <span style={{
+                            fontSize: '1.25rem',
+                            fontWeight: 'bold',
+                            color: 'var(--text-primary)',
+                            opacity: isDesktop && isSidebarCollapsed ? 0 : 1,
+                            transition: 'opacity var(--sidebar-transition)',
+                            whiteSpace: 'nowrap'
+                        }}>
+                            Sneat
+                        </span>
                     </div>
                     <button
                         onClick={() => setSidebarOpen(false)}
                         style={{
-                            color: '#6b7280',
+                            color: 'var(--text-secondary)',
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
                             padding: '0.5rem',
-                            display: isDesktop ? 'none' : 'block'
+                            display: isDesktop ? 'none' : 'block',
+                            flexShrink: 0
                         }}
                     >
                         <X size={20} />
                     </button>
                 </div>
 
+                {/* Toggle Button (Desktop only) */}
+                {isDesktop && (
+                    <div style={{
+                        padding: '0.75rem 1rem',
+                        borderBottom: '1px solid var(--border-color)'
+                    }}>
+                        <button
+                            onClick={toggleSidebarCollapse}
+                            style={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+                                gap: '0.75rem',
+                                padding: '0.5rem 0.75rem',
+                                backgroundColor: 'var(--bg-tertiary)',
+                                color: 'var(--text-secondary)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '0.5rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                fontSize: '0.875rem',
+                                fontWeight: 500
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+                                e.currentTarget.style.borderColor = 'var(--border-color-hover)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+                                e.currentTarget.style.borderColor = 'var(--border-color)';
+                            }}
+                        >
+                            {isSidebarCollapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
+                            <span style={{
+                                opacity: isSidebarCollapsed ? 0 : 1,
+                                width: isSidebarCollapsed ? 0 : 'auto',
+                                overflow: 'hidden',
+                                transition: 'opacity var(--sidebar-transition), width var(--sidebar-transition)',
+                                whiteSpace: 'nowrap'
+                            }}>
+                                Réduire
+                            </span>
+                        </button>
+                    </div>
+                )}
+
                 {/* Navigation */}
                 <nav style={{ padding: '1rem' }}>
                     {menuItems.map((item) => (
-                        <Link
+                        <div
                             key={item.path}
-                            to={item.path}
-                            onClick={() => setSidebarOpen(false)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.75rem',
-                                padding: '0.75rem 1rem',
-                                borderRadius: '0.5rem',
-                                marginBottom: '0.25rem',
-                                textDecoration: 'none',
-                                transition: 'all 0.2s',
-                                backgroundColor: isActive(item.path) ? '#f5f3ff' : 'transparent',
-                                color: isActive(item.path) ? 'var(--color-primary-600)' : '#374151',
-                                fontWeight: 500
-                            }}
+                            style={{ position: 'relative' }}
+                            onMouseEnter={() => setHoveredItem(item.path)}
+                            onMouseLeave={() => setHoveredItem(null)}
                         >
-                            <item.icon size={20} />
-                            <span>{item.label}</span>
-                        </Link>
+                            <Link
+                                to={item.path}
+                                onClick={() => setSidebarOpen(false)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: isDesktop && isSidebarCollapsed ? 'center' : 'flex-start',
+                                    gap: '0.75rem',
+                                    padding: '0.75rem 1rem',
+                                    borderRadius: '0.5rem',
+                                    marginBottom: '0.25rem',
+                                    textDecoration: 'none',
+                                    transition: 'all 0.2s',
+                                    backgroundColor: isActive(item.path) ? 'var(--bg-hover)' : 'transparent',
+                                    color: isActive(item.path) ? 'var(--color-primary-600)' : 'var(--text-primary)',
+                                    fontWeight: 500,
+                                    overflow: 'hidden'
+                                }}
+                            >
+                                <item.icon size={20} style={{ flexShrink: 0 }} />
+                                <span style={{
+                                    opacity: isDesktop && isSidebarCollapsed ? 0 : 1,
+                                    width: isDesktop && isSidebarCollapsed ? 0 : 'auto',
+                                    overflow: 'hidden',
+                                    transition: 'opacity var(--sidebar-transition), width var(--sidebar-transition)',
+                                    whiteSpace: 'nowrap'
+                                }}>
+                                    {item.label}
+                                </span>
+                            </Link>
+                            {/* Tooltip */}
+                            {isDesktop && isSidebarCollapsed && hoveredItem === item.path && (
+                                <div className="tooltip" style={{ opacity: 1 }}>
+                                    {item.label}
+                                </div>
+                            )}
+                        </div>
                     ))}
                 </nav>
             </aside>
@@ -133,9 +244,11 @@ const Layout = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
-                marginLeft: '16rem'
-            }}
-                className="lg:ml-64 ml-0">
+                marginLeft: isDesktop
+                    ? (isSidebarCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width-expanded)')
+                    : 0,
+                transition: 'margin-left var(--sidebar-transition)'
+            }}>
                 {/* Header */}
                 <header style={{
                     backgroundColor: 'var(--bg-secondary)',
@@ -154,7 +267,7 @@ const Layout = () => {
                             <button
                                 onClick={() => setSidebarOpen(!sidebarOpen)}
                                 style={{
-                                    color: '#6b7280',
+                                    color: 'var(--text-secondary)',
                                     background: 'none',
                                     border: 'none',
                                     cursor: 'pointer',
@@ -169,13 +282,13 @@ const Layout = () => {
                             <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                backgroundColor: '#f9fafb',
+                                backgroundColor: 'var(--bg-tertiary)',
                                 borderRadius: '0.5rem',
                                 padding: '0.5rem 0.75rem',
                                 width: '16rem'
                             }}
                                 className="hidden md:flex">
-                                <Search size={18} style={{ color: '#9ca3af' }} />
+                                <Search size={18} style={{ color: 'var(--text-tertiary)' }} />
                                 <input
                                     type="text"
                                     placeholder="Rechercher..."
@@ -185,7 +298,8 @@ const Layout = () => {
                                         outline: 'none',
                                         marginLeft: '0.5rem',
                                         width: '100%',
-                                        fontSize: '0.875rem'
+                                        fontSize: '0.875rem',
+                                        color: 'var(--text-primary)'
                                     }}
                                 />
                             </div>
@@ -216,7 +330,7 @@ const Layout = () => {
                             {/* Notifications */}
                             <button style={{
                                 position: 'relative',
-                                color: '#6b7280',
+                                color: 'var(--text-secondary)',
                                 background: 'none',
                                 border: 'none',
                                 cursor: 'pointer',
@@ -271,14 +385,14 @@ const Layout = () => {
                                         </span>
                                     </div>
                                     <div style={{ textAlign: 'left', display: isTablet ? 'block' : 'none' }}>
-                                        <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                                        <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
                                             {user?.username}
                                         </p>
-                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                                             {user?.roles?.[0] || 'User'}
                                         </p>
                                     </div>
-                                    <ChevronDown size={16} style={{ color: '#9ca3af' }} />
+                                    <ChevronDown size={16} style={{ color: 'var(--text-tertiary)' }} />
                                 </button>
 
                                 {/* Dropdown Menu */}
@@ -288,21 +402,21 @@ const Layout = () => {
                                         right: 0,
                                         marginTop: '0.5rem',
                                         width: '12rem',
-                                        backgroundColor: 'white',
+                                        backgroundColor: 'var(--bg-secondary)',
                                         borderRadius: '0.5rem',
-                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                        boxShadow: 'var(--shadow-lg)',
                                         padding: '0.5rem 0',
                                         zIndex: 50,
-                                        border: '1px solid #e5e7eb'
+                                        border: '1px solid var(--border-color)'
                                     }}>
                                         <div style={{
                                             padding: '0.5rem 1rem',
-                                            borderBottom: '1px solid #f3f4f6'
+                                            borderBottom: '1px solid var(--border-color)'
                                         }}>
-                                            <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#111827' }}>
+                                            <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
                                                 {user?.username}
                                             </p>
-                                            <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>{user?.email}</p>
+                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user?.email}</p>
                                         </div>
                                         <Link
                                             to="/profile"
@@ -311,7 +425,7 @@ const Layout = () => {
                                                 alignItems: 'center',
                                                 padding: '0.5rem 1rem',
                                                 fontSize: '0.875rem',
-                                                color: '#374151',
+                                                color: 'var(--text-primary)',
                                                 textDecoration: 'none',
                                                 transition: 'background-color 0.2s'
                                             }}

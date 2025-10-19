@@ -44,13 +44,13 @@ const Dashboard = () => {
         <div className="card" style={{ transition: 'all 0.2s', cursor: 'pointer' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                    <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>{title}</p>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827' }}>{value}</h3>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>{title}</p>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{value}</h3>
                     {trend && (
                         <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.5rem', color: '#10b981' }}>
                             <TrendingUp size={16} style={{ marginRight: '0.25rem' }} />
                             <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>+{trend}%</span>
-                            <span style={{ color: '#6b7280', fontSize: '0.75rem', marginLeft: '0.25rem' }}>ce mois</span>
+                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginLeft: '0.25rem' }}>ce mois</span>
                         </div>
                     )}
                 </div>
@@ -88,10 +88,10 @@ const Dashboard = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Header */}
             <div>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                     Dashboard
                 </h1>
-                <p style={{ color: '#6b7280' }}>Aperçu de votre système</p>
+                <p style={{ color: 'var(--text-secondary)' }}>Aperçu de votre système</p>
             </div>
 
             {/* Stats Cards */}
@@ -136,7 +136,7 @@ const Dashboard = () => {
                 {/* Activity Chart */}
                 <div className="card">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                        <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827' }}>
+                        <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                             Activité Récente
                         </h2>
                         <select className="input-field" style={{ width: 'auto', fontSize: '0.875rem', padding: '0.375rem 0.75rem' }}>
@@ -150,17 +150,17 @@ const Dashboard = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: '#f9fafb',
+                        backgroundColor: 'var(--bg-tertiary)',
                         borderRadius: '0.5rem'
                     }}>
-                        <p style={{ color: '#6b7280' }}>Graphique d'activité</p>
+                        <p style={{ color: 'var(--text-secondary)' }}>Graphique d'activité</p>
                     </div>
                 </div>
 
                 {/* Users Distribution */}
                 <div className="card">
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827' }}>
+                        <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                             Distribution des Rôles
                         </h2>
                     </div>
@@ -172,10 +172,10 @@ const Dashboard = () => {
                         ].map((role, idx) => (
                             <div key={idx}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                                    <span style={{ color: '#6b7280' }}>{role.label}</span>
-                                    <span style={{ fontWeight: 500, color: '#111827' }}>{role.value}%</span>
+                                    <span style={{ color: 'var(--text-secondary)' }}>{role.label}</span>
+                                    <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{role.value}%</span>
                                 </div>
-                                <div style={{ width: '100%', backgroundColor: '#e5e7eb', borderRadius: '9999px', height: '0.5rem' }}>
+                                <div style={{ width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '9999px', height: '0.5rem' }}>
                                     <div style={{
                                         backgroundColor: role.color,
                                         height: '0.5rem',

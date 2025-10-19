@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
+    const toast = useToast();
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -35,9 +37,11 @@ const Login = () => {
         });
 
         if (result.success) {
+            toast.success('Connexion réussie ! Bienvenue.');
             navigate('/dashboard');
         } else {
             setError(result.message);
+            toast.error(result.message || 'Échec de la connexion');
         }
         setLoading(false);
     };
@@ -45,7 +49,7 @@ const Login = () => {
     return (
         <div style={{
             minHeight: '100vh',
-            backgroundColor: '#f9fafb',
+            backgroundColor: 'var(--bg-tertiary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -69,12 +73,12 @@ const Login = () => {
                     <h1 style={{
                         fontSize: '1.5rem',
                         fontWeight: 'bold',
-                        color: '#111827',
+                        color: 'var(--text-primary)',
                         marginBottom: '0.5rem'
                     }}>
                         Bienvenue sur Sneat! 👋
                     </h1>
-                    <p style={{ color: '#6b7280' }}>
+                    <p style={{ color: 'var(--text-secondary)' }}>
                         Veuillez vous connecter à votre compte
                     </p>
                 </div>
@@ -103,7 +107,7 @@ const Login = () => {
                                 display: 'block',
                                 fontSize: '0.875rem',
                                 fontWeight: 500,
-                                color: '#374151',
+                                color: 'var(--text-primary)',
                                 marginBottom: '0.5rem'
                             }}>
                                 Nom d'utilisateur
@@ -131,7 +135,7 @@ const Login = () => {
                                     display: 'block',
                                     fontSize: '0.875rem',
                                     fontWeight: 500,
-                                    color: '#374151'
+                                    color: 'var(--text-primary)'
                                 }}>
                                     Mot de passe
                                 </label>
@@ -165,7 +169,7 @@ const Login = () => {
                                         right: '0.75rem',
                                         top: '50%',
                                         transform: 'translateY(-50%)',
-                                        color: '#9ca3af',
+                                        color: 'var(--text-tertiary)',
                                         background: 'none',
                                         border: 'none',
                                         cursor: 'pointer',
@@ -194,7 +198,7 @@ const Login = () => {
                             <label style={{
                                 marginLeft: '0.5rem',
                                 fontSize: '0.875rem',
-                                color: '#374151',
+                                color: 'var(--text-primary)',
                                 cursor: 'pointer'
                             }}>
                                 Se souvenir de moi
@@ -205,7 +209,7 @@ const Login = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn-primary"
+                            className={`btn-primary ${loading ? 'btn-loading' : ''}`}
                             style={{ width: '100%' }}
                         >
                             {loading ? 'Connexion...' : 'Se connecter'}
@@ -214,7 +218,7 @@ const Login = () => {
 
                     {/* Register Link */}
                     <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-                        <span style={{ color: '#6b7280' }}>Nouveau sur notre plateforme? </span>
+                        <span style={{ color: 'var(--text-secondary)' }}>Nouveau sur notre plateforme? </span>
                         <Link
                             to="/register"
                             style={{
@@ -232,7 +236,7 @@ const Login = () => {
                 <p style={{
                     textAlign: 'center',
                     fontSize: '0.875rem',
-                    color: '#6b7280',
+                    color: 'var(--text-secondary)',
                     marginTop: '1.5rem'
                 }}>
                     © 2024 Sneat. Tous droits réservés.

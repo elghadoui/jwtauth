@@ -178,7 +178,7 @@ const Profile = () => {
                                     borderRadius: '9999px',
                                     fontSize: '0.75rem',
                                     fontWeight: 500,
-                                    backgroundColor: '#ede9fe',
+                                    backgroundColor: 'var(--bg-tertiary)',
                                     color: '#7c3aed'
                                 }}
                             >
@@ -195,7 +195,7 @@ const Profile = () => {
                             <div style={{
                                 width: '3rem',
                                 height: '3rem',
-                                backgroundColor: '#dbeafe',
+                                backgroundColor: 'var(--bg-tertiary)',
                                 borderRadius: '0.5rem',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -215,7 +215,7 @@ const Profile = () => {
                             <div style={{
                                 width: '3rem',
                                 height: '3rem',
-                                backgroundColor: '#f0fdf4',
+                                backgroundColor: 'var(--bg-tertiary)',
                                 borderRadius: '0.5rem',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -400,8 +400,8 @@ const Profile = () => {
 
                                     <div style={{
                                         padding: '0.75rem',
-                                        backgroundColor: '#eff6ff',
-                                        border: '1px solid #bfdbfe',
+                                        backgroundColor: 'var(--bg-tertiary)',
+                                        border: '1px solid var(--border-color)',
                                         borderRadius: '0.5rem',
                                         fontSize: '0.75rem',
                                         color: '#1e40af'

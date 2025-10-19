@@ -103,10 +103,10 @@ const Roles = () => {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                         Rôles
                     </h1>
-                    <p style={{ color: '#6b7280' }}>Gérer les rôles et permissions</p>
+                    <p style={{ color: 'var(--text-secondary)' }}>Gérer les rôles et permissions</p>
                 </div>
                 <button onClick={() => setShowModal(true)} className="btn-primary">
                     <Plus size={18} style={{ marginRight: '0.5rem' }} />
@@ -119,8 +119,8 @@ const Roles = () => {
                 <div className="card">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
-                            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>Total des Rôles</p>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827' }}>{roles.length}</h3>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Total des Rôles</p>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{roles.length}</h3>
                         </div>
                         <div style={{
                             width: '3rem',
@@ -139,8 +139,8 @@ const Roles = () => {
                 <div className="card">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
-                            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>Utilisateurs Assignés</p>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827' }}>{users.length}</h3>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Utilisateurs Assignés</p>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{users.length}</h3>
                         </div>
                         <div style={{
                             width: '3rem',
@@ -159,8 +159,8 @@ const Roles = () => {
                 <div className="card">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
-                            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>Rôles Actifs</p>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827' }}>{roles.length}</h3>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Rôles Actifs</p>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{roles.length}</h3>
                         </div>
                         <div style={{
                             width: '3rem',
@@ -199,8 +199,8 @@ const Roles = () => {
                                         <Shield size={20} />
                                     </div>
                                     <div>
-                                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827' }}>{role}</h3>
-                                        <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>{role}</h3>
+                                        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                                             {getUserCountByRole(role)} utilisateur(s)
                                         </p>
                                     </div>
@@ -210,7 +210,7 @@ const Roles = () => {
                                         onClick={() => handleDeleteRole(role)}
                                         style={{
                                             padding: '0.5rem',
-                                            color: '#9ca3af',
+                                            color: 'var(--text-tertiary)',
                                             backgroundColor: 'transparent',
                                             border: 'none',
                                             borderRadius: '0.5rem',
@@ -223,7 +223,7 @@ const Roles = () => {
                                 )}
                             </div>
 
-                            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem', marginTop: '1rem' }}>
+                            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '1rem' }}>
                                 <button
                                     onClick={() => viewUsersInRole(role)}
                                     style={{
@@ -252,11 +252,11 @@ const Roles = () => {
             {/* Empty State */}
             {roles.length === 0 && (
                 <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-                    <Shield size={48} style={{ margin: '0 auto', color: '#9ca3af', marginBottom: '1rem' }} />
-                    <h3 style={{ fontSize: '1.125rem', fontWeight: 500, color: '#111827', marginBottom: '0.5rem' }}>
+                    <Shield size={48} style={{ margin: '0 auto', color: 'var(--text-tertiary)', marginBottom: '1rem' }} />
+                    <h3 style={{ fontSize: '1.125rem', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                         Aucun rôle trouvé
                     </h3>
-                    <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
                         Commencez par créer votre premier rôle
                     </p>
                     <button onClick={() => setShowModal(true)} className="btn-primary">
@@ -279,20 +279,20 @@ const Roles = () => {
                     padding: '1rem'
                 }}>
                     <div style={{
-                        backgroundColor: 'white',
+                        backgroundColor: 'var(--bg-secondary)',
                         borderRadius: '0.5rem',
                         maxWidth: '28rem',
                         width: '100%',
                         padding: '1.5rem'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827' }}>Créer un Rôle</h2>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>Créer un Rôle</h2>
                             <button
                                 onClick={() => {
                                     setShowModal(false);
                                     setNewRole('');
                                 }}
-                                style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+                                style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
                             >
                                 <X size={20} />
                             </button>
@@ -300,7 +300,7 @@ const Roles = () => {
 
                         <form onSubmit={handleCreateRole} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             <div>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                                     Nom du Rôle
                                 </label>
                                 <input
@@ -311,7 +311,7 @@ const Roles = () => {
                                     placeholder="Ex: Moderator, Manager..."
                                     required
                                 />
-                                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
                                     Le nom du rôle doit être unique
                                 </p>
                             </div>
@@ -350,7 +350,7 @@ const Roles = () => {
                     padding: '1rem'
                 }}>
                     <div style={{
-                        backgroundColor: 'white',
+                        backgroundColor: 'var(--bg-secondary)',
                         borderRadius: '0.5rem',
                         maxWidth: '48rem',
                         width: '100%',
@@ -359,7 +359,7 @@ const Roles = () => {
                         overflowY: 'auto'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827' }}>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
                                 Utilisateurs avec le rôle "{selectedRole}"
                             </h2>
                             <button
@@ -367,7 +367,7 @@ const Roles = () => {
                                     setShowUsersModal(false);
                                     setSelectedRole(null);
                                 }}
-                                style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+                                style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
                             >
                                 <X size={20} />
                             </button>
@@ -383,7 +383,7 @@ const Roles = () => {
                                             alignItems: 'center',
                                             justifyContent: 'space-between',
                                             padding: '1rem',
-                                            backgroundColor: '#f9fafb',
+                                            backgroundColor: 'var(--bg-tertiary)',
                                             borderRadius: '0.5rem',
                                             transition: 'background-color 0.2s'
                                         }}
@@ -404,10 +404,10 @@ const Roles = () => {
                                                 </span>
                                             </div>
                                             <div>
-                                                <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#111827' }}>
+                                                <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
                                                     {user.userName}
                                                 </p>
-                                                <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>{user.email}</p>
+                                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user.email}</p>
                                             </div>
                                         </div>
                                         <span style={{
@@ -415,8 +415,8 @@ const Roles = () => {
                                             borderRadius: '9999px',
                                             fontSize: '0.75rem',
                                             fontWeight: 500,
-                                            backgroundColor: user.emailConfirmed ? '#d1fae5' : '#f3f4f6',
-                                            color: user.emailConfirmed ? '#065f46' : '#374151'
+                                            backgroundColor: user.emailConfirmed ? '#d1fae5' : 'var(--bg-tertiary)',
+                                            color: user.emailConfirmed ? '#065f46' : 'var(--text-primary)'
                                         }}>
                                             {user.emailConfirmed ? 'Actif' : 'Inactif'}
                                         </span>
@@ -425,8 +425,8 @@ const Roles = () => {
                             </div>
                         ) : (
                             <div style={{ textAlign: 'center', padding: '2rem' }}>
-                                <Users size={48} style={{ margin: '0 auto', color: '#9ca3af', marginBottom: '1rem' }} />
-                                <p style={{ color: '#6b7280' }}>
+                                <Users size={48} style={{ margin: '0 auto', color: 'var(--text-tertiary)', marginBottom: '1rem' }} />
+                                <p style={{ color: 'var(--text-secondary)' }}>
                                     Aucun utilisateur avec ce rôle
                                 </p>
                             </div>

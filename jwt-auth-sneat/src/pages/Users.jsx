@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { usersAPI, rolesAPI } from '../services/api';
-import { Search, Plus, Edit, Trash2, Filter, Download, X, Shield, Eye, EyeOff } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import { Search, Plus, Edit, Trash2, Filter, Download, X, Shield, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 
 const Users = () => {
+    const toast = useToast();
     const [users, setUsers] = useState([]);
     const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -16,6 +18,9 @@ const Users = () => {
     const [changePassword, setChangePassword] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const [formData, setFormData] = useState({
         username: '',
@@ -124,14 +129,31 @@ const Users = () => {
         }
     };
 
-    const handleDelete = async (userId) => {
-        if (window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur?')) {
-            try {
-                await usersAPI.delete(userId);
-                loadData();
-            } catch (error) {
-                console.error('Erreur:', error);
-            }
+    const openDeleteModal = (user) => {
+        setUserToDelete(user);
+        setShowDeleteModal(true);
+    };
+
+    const closeDeleteModal = () => {
+        setShowDeleteModal(false);
+        setUserToDelete(null);
+    };
+
+    const confirmDelete = async () => {
+        if (!userToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            await usersAPI.delete(userToDelete.id);
+            toast.success(`L'utilisateur ${userToDelete.userName} a été supprimé avec succès`);
+            loadData();
+            closeDeleteModal();
+        } catch (error) {
+            console.error('Erreur:', error);
+            const errorMessage = error.response?.data?.message || 'Erreur lors de la suppression';
+            toast.error(errorMessage);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -288,10 +310,10 @@ const Users = () => {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                         Utilisateurs
                     </h1>
-                    <p style={{ color: '#6b7280' }}>Liste de tous les utilisateurs</p>
+                    <p style={{ color: 'var(--text-secondary)' }}>Liste de tous les utilisateurs</p>
                 </div>
                 <button onClick={() => openModal()} className="btn-primary">
                     <Plus size={18} style={{ marginRight: '0.5rem' }} />
@@ -305,7 +327,7 @@ const Users = () => {
                     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                         {/* Search */}
                         <div style={{ flex: '1 1 300px', position: 'relative' }}>
-                            <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                            <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
                             <input
                                 type="text"
                                 placeholder="Rechercher un utilisateur..."
@@ -318,7 +340,7 @@ const Users = () => {
 
                         {/* Role Filter */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Filter size={18} style={{ color: '#9ca3af' }} />
+                            <Filter size={18} style={{ color: 'var(--text-tertiary)' }} />
                             <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} className="input-field" style={{ width: 'auto' }}>
                                 <option value="all">Tous les rôles</option>
                                 {roles.map((role) => (
@@ -340,18 +362,18 @@ const Users = () => {
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                        <thead style={{ backgroundColor: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)' }}>
                             <tr>
-                                <th style={{ textAlign: 'left', padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Utilisateur</th>
-                                <th style={{ textAlign: 'left', padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Email</th>
-                                <th style={{ textAlign: 'left', padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Rôle</th>
-                                <th style={{ textAlign: 'left', padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Status</th>
-                                <th style={{ textAlign: 'right', padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Actions</th>
+                                <th style={{ textAlign: 'left', padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Utilisateur</th>
+                                <th style={{ textAlign: 'left', padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Email</th>
+                                <th style={{ textAlign: 'left', padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Rôle</th>
+                                <th style={{ textAlign: 'left', padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Status</th>
+                                <th style={{ textAlign: 'right', padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredUsers.map((user) => (
-                                <tr key={user.id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background-color 0.2s' }}>
+                                <tr key={user.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.2s' }}>
                                     <td style={{ padding: '1rem 1.5rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center' }}>
                                             <div style={{
@@ -369,12 +391,12 @@ const Users = () => {
                                                 </span>
                                             </div>
                                             <div>
-                                                <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#111827' }}>{user.userName}</p>
-                                                <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>{user.firstName} {user.lastName}</p>
+                                                <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>{user.userName}</p>
+                                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user.firstName} {user.lastName}</p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', color: '#6b7280' }}>{user.email}</td>
+                                    <td style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{user.email}</td>
                                     <td style={{ padding: '1rem 1.5rem' }}>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
                                             {user.roles?.map((role) => (
@@ -401,8 +423,8 @@ const Users = () => {
                                             borderRadius: '9999px',
                                             fontSize: '0.75rem',
                                             fontWeight: 500,
-                                            backgroundColor: user.emailConfirmed ? '#d1fae5' : '#f3f4f6',
-                                            color: user.emailConfirmed ? '#065f46' : '#374151'
+                                            backgroundColor: user.emailConfirmed ? '#d1fae5' : 'var(--bg-tertiary)',
+                                            color: user.emailConfirmed ? '#065f46' : 'var(--text-primary)'
                                         }}>
                                             {user.emailConfirmed ? 'Actif' : 'Inactif'}
                                         </span>
@@ -413,7 +435,7 @@ const Users = () => {
                                                 onClick={() => openRolesModal(user)}
                                                 style={{
                                                     padding: '0.5rem',
-                                                    color: '#6b7280',
+                                                    color: 'var(--text-secondary)',
                                                     backgroundColor: 'transparent',
                                                     border: 'none',
                                                     borderRadius: '0.5rem',
@@ -428,7 +450,7 @@ const Users = () => {
                                                 onClick={() => openModal(user)}
                                                 style={{
                                                     padding: '0.5rem',
-                                                    color: '#6b7280',
+                                                    color: 'var(--text-secondary)',
                                                     backgroundColor: 'transparent',
                                                     border: 'none',
                                                     borderRadius: '0.5rem',
@@ -439,16 +461,17 @@ const Users = () => {
                                                 <Edit size={16} />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(user.id)}
+                                                onClick={() => openDeleteModal(user)}
                                                 style={{
                                                     padding: '0.5rem',
-                                                    color: '#6b7280',
+                                                    color: '#ef4444',
                                                     backgroundColor: 'transparent',
                                                     border: 'none',
                                                     borderRadius: '0.5rem',
                                                     cursor: 'pointer',
                                                     transition: 'all 0.2s'
                                                 }}
+                                                title="Supprimer l'utilisateur"
                                             >
                                                 <Trash2 size={16} />
                                             </button>
@@ -461,7 +484,7 @@ const Users = () => {
 
                     {filteredUsers.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '3rem' }}>
-                            <p style={{ color: '#6b7280' }}>Aucun utilisateur trouvé</p>
+                            <p style={{ color: 'var(--text-secondary)' }}>Aucun utilisateur trouvé</p>
                         </div>
                     )}
                 </div>
@@ -480,24 +503,24 @@ const Users = () => {
                     padding: '1rem'
                 }}>
                     <div style={{
-                        backgroundColor: 'white',
+                        backgroundColor: 'var(--bg-secondary)',
                         borderRadius: '0.5rem',
                         maxWidth: '28rem',
                         width: '100%',
                         padding: '1.5rem'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827' }}>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
                                 {editingUser ? 'Modifier Utilisateur' : 'Nouvel Utilisateur'}
                             </h2>
-                            <button onClick={closeModal} style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}>
+                            <button onClick={closeModal} style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}>
                                 <X size={20} />
                             </button>
                         </div>
 
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             <div>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                                     Nom d'utilisateur
                                 </label>
                                 <input
@@ -510,7 +533,7 @@ const Users = () => {
                             </div>
 
                             <div>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                                     Email
                                 </label>
                                 <input
@@ -524,7 +547,7 @@ const Users = () => {
 
                             {!editingUser && (
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                                         Mot de passe *
                                     </label>
                                     <div style={{ position: 'relative' }}>
@@ -545,7 +568,7 @@ const Users = () => {
                                                 right: '0.75rem',
                                                 top: '50%',
                                                 transform: 'translateY(-50%)',
-                                                color: '#9ca3af',
+                                                color: 'var(--text-tertiary)',
                                                 background: 'none',
                                                 border: 'none',
                                                 cursor: 'pointer',
@@ -560,7 +583,7 @@ const Users = () => {
 
                             {!editingUser && (
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                                         Confirmer le mot de passe *
                                     </label>
                                     <div style={{ position: 'relative' }}>
@@ -581,7 +604,7 @@ const Users = () => {
                                                 right: '0.75rem',
                                                 top: '50%',
                                                 transform: 'translateY(-50%)',
-                                                color: '#9ca3af',
+                                                color: 'var(--text-tertiary)',
                                                 background: 'none',
                                                 border: 'none',
                                                 cursor: 'pointer',
@@ -597,8 +620,8 @@ const Users = () => {
                             {editingUser && (
                                 <div style={{
                                     padding: '1rem',
-                                    backgroundColor: '#f9fafb',
-                                    border: '1px solid #e5e7eb',
+                                    backgroundColor: 'var(--bg-tertiary)',
+                                    border: '1px solid var(--border-color)',
                                     borderRadius: '0.5rem'
                                 }}>
                                     <label style={{
@@ -625,7 +648,7 @@ const Users = () => {
                                                 accentColor: 'var(--color-primary-600)'
                                             }}
                                         />
-                                        <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                                        <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
                                             Changer le mot de passe
                                         </span>
                                     </label>
@@ -633,7 +656,7 @@ const Users = () => {
                                     {changePassword && (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
                                             <div>
-                                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>
+                                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                                                     Nouveau mot de passe *
                                                 </label>
                                                 <div style={{ position: 'relative' }}>
@@ -654,7 +677,7 @@ const Users = () => {
                                                             right: '0.75rem',
                                                             top: '50%',
                                                             transform: 'translateY(-50%)',
-                                                            color: '#9ca3af',
+                                                            color: 'var(--text-tertiary)',
                                                             background: 'none',
                                                             border: 'none',
                                                             cursor: 'pointer',
@@ -667,7 +690,7 @@ const Users = () => {
                                             </div>
 
                                             <div>
-                                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>
+                                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                                                     Confirmer le nouveau mot de passe *
                                                 </label>
                                                 <div style={{ position: 'relative' }}>
@@ -688,7 +711,7 @@ const Users = () => {
                                                             right: '0.75rem',
                                                             top: '50%',
                                                             transform: 'translateY(-50%)',
-                                                            color: '#9ca3af',
+                                                            color: 'var(--text-tertiary)',
                                                             background: 'none',
                                                             border: 'none',
                                                             cursor: 'pointer',
@@ -717,7 +740,7 @@ const Users = () => {
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                                         Prénom
                                     </label>
                                     <input
@@ -728,7 +751,7 @@ const Users = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                                         Nom
                                     </label>
                                     <input
@@ -839,7 +862,7 @@ const Users = () => {
                     padding: '1rem'
                 }}>
                     <div style={{
-                        backgroundColor: 'white',
+                        backgroundColor: 'var(--bg-secondary)',
                         borderRadius: '0.5rem',
                         maxWidth: '28rem',
                         width: '100%',
@@ -848,11 +871,11 @@ const Users = () => {
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Shield size={20} style={{ color: 'var(--color-primary-600)' }} />
-                                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827' }}>
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
                                     Gérer les rôles
                                 </h2>
                             </div>
-                            <button onClick={closeRolesModal} style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}>
+                            <button onClick={closeRolesModal} style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}>
                                 <X size={20} />
                             </button>
                         </div>
@@ -860,7 +883,7 @@ const Users = () => {
                         {/* User Info */}
                         <div style={{
                             padding: '1rem',
-                            backgroundColor: '#f9fafb',
+                            backgroundColor: 'var(--bg-tertiary)',
                             borderRadius: '0.5rem',
                             marginBottom: '1.5rem'
                         }}>
@@ -880,10 +903,10 @@ const Users = () => {
                                     </span>
                                 </div>
                                 <div>
-                                    <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#111827' }}>
+                                    <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
                                         {selectedUser.userName}
                                     </p>
-                                    <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                                         {selectedUser.email}
                                     </p>
                                 </div>
@@ -892,7 +915,7 @@ const Users = () => {
 
                         {/* Roles List */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                            <label style={{ fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                            <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
                                 Rôles disponibles
                             </label>
                             {roles.map((role) => {
@@ -919,8 +942,8 @@ const Users = () => {
                                             display: 'flex',
                                             alignItems: 'center',
                                             padding: '0.75rem',
-                                            backgroundColor: hasRole ? '#f0fdf4' : '#f9fafb',
-                                            border: hasRole ? '1px solid #86efac' : '1px solid #e5e7eb',
+                                            backgroundColor: hasRole ? '#f0fdf4' : 'var(--bg-tertiary)',
+                                            border: hasRole ? '1px solid #86efac' : '1px solid var(--border-color)',
                                             borderRadius: '0.5rem',
                                             cursor: 'pointer',
                                             transition: 'all 0.2s'
@@ -943,7 +966,7 @@ const Users = () => {
                                             <p style={{
                                                 fontSize: '0.875rem',
                                                 fontWeight: 500,
-                                                color: hasRole ? '#166534' : '#374151'
+                                                color: hasRole ? '#166534' : 'var(--text-primary)'
                                             }}>
                                                 {role}
                                             </p>
@@ -985,6 +1008,119 @@ const Users = () => {
                         >
                             Fermer
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && userToDelete && (
+                <div className="modal-backdrop" onClick={closeDeleteModal}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            position: 'fixed',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            backgroundColor: 'var(--bg-secondary)',
+                            borderRadius: '0.5rem',
+                            maxWidth: '26rem',
+                            width: '100%',
+                            padding: '1.5rem',
+                            zIndex: 9998,
+                            margin: '1rem'
+                        }}
+                    >
+                        {/* Icon Header */}
+                        <div style={{
+                            width: '4rem',
+                            height: '4rem',
+                            backgroundColor: '#fef2f2',
+                            borderRadius: '9999px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 1rem'
+                        }}>
+                            <AlertTriangle size={32} style={{ color: '#ef4444' }} />
+                        </div>
+
+                        {/* Title */}
+                        <h2 style={{
+                            fontSize: '1.25rem',
+                            fontWeight: 'bold',
+                            color: 'var(--text-primary)',
+                            textAlign: 'center',
+                            marginBottom: '0.5rem'
+                        }}>
+                            Supprimer l'utilisateur
+                        </h2>
+
+                        {/* Message */}
+                        <p style={{
+                            fontSize: '0.875rem',
+                            color: 'var(--text-secondary)',
+                            textAlign: 'center',
+                            marginBottom: '1.5rem'
+                        }}>
+                            Êtes-vous sûr de vouloir supprimer <strong style={{ color: 'var(--text-primary)' }}>{userToDelete.userName}</strong> ?
+                            <br />
+                            Cette action est irréversible.
+                        </p>
+
+                        {/* User Info Card */}
+                        <div style={{
+                            padding: '1rem',
+                            backgroundColor: 'var(--bg-tertiary)',
+                            borderRadius: '0.5rem',
+                            marginBottom: '1.5rem'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <div style={{
+                                    width: '2.5rem',
+                                    height: '2.5rem',
+                                    backgroundColor: '#ef4444',
+                                    borderRadius: '9999px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginRight: '0.75rem'
+                                }}>
+                                    <span style={{ color: 'white', fontWeight: 500 }}>
+                                        {userToDelete.userName.charAt(0).toUpperCase()}
+                                    </span>
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                                        {userToDelete.userName}
+                                    </p>
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                        {userToDelete.email}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            <button
+                                onClick={closeDeleteModal}
+                                disabled={isDeleting}
+                                className="btn-secondary"
+                                style={{ flex: 1 }}
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                disabled={isDeleting}
+                                className={`btn-danger ${isDeleting ? 'btn-loading' : ''}`}
+                                style={{ flex: 1 }}
+                            >
+                                {isDeleting ? 'Suppression...' : 'Supprimer'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
