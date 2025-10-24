@@ -14,10 +14,14 @@ import {
     Bell,
     Search,
     ChevronDown,
+    ChevronRight,
     Moon,
     Sun,
     ChevronsLeft,
     ChevronsRight,
+    Package,
+    Inbox,
+    FileText,
 } from 'lucide-react';
 
 const Layout = () => {
@@ -29,6 +33,7 @@ const Layout = () => {
     const [profileDropdown, setProfileDropdown] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [hoveredItem, setHoveredItem] = useState(null);
+    const [expandedSections, setExpandedSections] = useState({});
 
     // Responsive hooks
     const isDesktop = useMediaQuery('(min-width: 1024px)');
@@ -50,11 +55,53 @@ const Layout = () => {
     };
 
     const menuItems = [
-        { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { path: '/users', icon: Users, label: 'Utilisateurs' },
-        { path: '/roles', icon: Shield, label: 'Rôles' },
-        { path: '/settings', icon: Settings, label: 'Paramètres' },
+        {
+            path: '/dashboard',
+            icon: LayoutDashboard,
+            label: 'Dashboard'
+        },
+        {
+            id: 'gestion-reception',
+            icon: Inbox,
+            label: 'Gestion Réception',
+            isSection: true,
+            children: [
+                { path: '/receptions', icon: Inbox, label: 'Réceptions', role: 'super-user' },
+                { path: '/stock', icon: Package, label: 'Stock', role: 'super-user' },
+            ]
+        },
+        {
+            id: 'user-management',
+            icon: Users,
+            label: 'Gestion Utilisateur',
+            isSection: true,
+            children: [
+                { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard Utilisateur' },
+                { path: '/users', icon: Users, label: 'Utilisateurs' },
+                { path: '/roles', icon: Shield, label: 'Rôles' },
+            ]
+        },
+        {
+            id: 'export',
+            icon: FileText,
+            label: 'Export',
+            isSection: true,
+            children: []
+        },
+        {
+            path: '/settings',
+            icon: Settings,
+            label: 'Paramètres'
+        },
     ];
+
+    // Toggle section expand/collapse
+    const toggleSection = (sectionId) => {
+        setExpandedSections(prev => ({
+            ...prev,
+            [sectionId]: !prev[sectionId]
+        }));
+    };
 
     const handleLogout = () => {
         logout();
@@ -190,51 +237,144 @@ const Layout = () => {
 
                 {/* Navigation */}
                 <nav style={{ padding: '1rem' }}>
-                    {menuItems.map((item) => (
-                        <div
-                            key={item.path}
-                            style={{ position: 'relative' }}
-                            onMouseEnter={() => setHoveredItem(item.path)}
-                            onMouseLeave={() => setHoveredItem(null)}
-                        >
-                            <Link
-                                to={item.path}
-                                onClick={() => setSidebarOpen(false)}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: isDesktop && isSidebarCollapsed ? 'center' : 'flex-start',
-                                    gap: '0.75rem',
-                                    padding: '0.75rem 1rem',
-                                    borderRadius: '0.5rem',
-                                    marginBottom: '0.25rem',
-                                    textDecoration: 'none',
-                                    transition: 'all 0.2s',
-                                    backgroundColor: isActive(item.path) ? 'var(--bg-hover)' : 'transparent',
-                                    color: isActive(item.path) ? 'var(--color-primary-600)' : 'var(--text-primary)',
-                                    fontWeight: 500,
-                                    overflow: 'hidden'
-                                }}
-                            >
-                                <item.icon size={20} style={{ flexShrink: 0 }} />
-                                <span style={{
-                                    opacity: isDesktop && isSidebarCollapsed ? 0 : 1,
-                                    width: isDesktop && isSidebarCollapsed ? 0 : 'auto',
-                                    overflow: 'hidden',
-                                    transition: 'opacity var(--sidebar-transition), width var(--sidebar-transition)',
-                                    whiteSpace: 'nowrap'
-                                }}>
-                                    {item.label}
-                                </span>
-                            </Link>
-                            {/* Tooltip */}
-                            {isDesktop && isSidebarCollapsed && hoveredItem === item.path && (
-                                <div className="tooltip" style={{ opacity: 1 }}>
-                                    {item.label}
+                    {menuItems.map((item) => {
+                        // Si c'est une section avec des enfants
+                        if (item.isSection) {
+                            const isExpanded = expandedSections[item.id];
+                            return (
+                                <div key={item.id} style={{ marginBottom: '0.5rem' }}>
+                                    {/* Section Header */}
+                                    <button
+                                        onClick={() => toggleSection(item.id)}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            width: '100%',
+                                            gap: '0.75rem',
+                                            padding: '0.75rem 1rem',
+                                            borderRadius: '0.5rem',
+                                            marginBottom: '0.25rem',
+                                            textDecoration: 'none',
+                                            transition: 'all 0.2s',
+                                            backgroundColor: 'transparent',
+                                            color: 'var(--text-primary)',
+                                            fontWeight: 600,
+                                            border: 'none',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <item.icon size={20} style={{ flexShrink: 0 }} />
+                                            <span style={{
+                                                opacity: isDesktop && isSidebarCollapsed ? 0 : 1,
+                                                width: isDesktop && isSidebarCollapsed ? 0 : 'auto',
+                                                overflow: 'hidden',
+                                                transition: 'opacity var(--sidebar-transition), width var(--sidebar-transition)',
+                                                whiteSpace: 'nowrap'
+                                            }}>
+                                                {item.label}
+                                            </span>
+                                        </div>
+                                        {!isSidebarCollapsed && (
+                                            <ChevronRight
+                                                size={16}
+                                                style={{
+                                                    transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                                                    transition: 'transform 0.2s'
+                                                }}
+                                            />
+                                        )}
+                                    </button>
+
+                                    {/* Section Children */}
+                                    {isExpanded && !isSidebarCollapsed && (
+                                        <div style={{ paddingLeft: '1rem' }}>
+                                            {item.children.map((child) => {
+                                                // Vérifier le rôle si nécessaire
+                                                if (child.role && !user?.roles?.includes(child.role) && !user?.roles?.includes('Super-User')) {
+                                                    return null;
+                                                }
+                                                return (
+                                                    <Link
+                                                        key={child.path}
+                                                        to={child.path}
+                                                        onClick={() => setSidebarOpen(false)}
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '0.75rem',
+                                                            padding: '0.5rem 1rem',
+                                                            borderRadius: '0.5rem',
+                                                            marginBottom: '0.25rem',
+                                                            textDecoration: 'none',
+                                                            transition: 'all 0.2s',
+                                                            backgroundColor: isActive(child.path) ? 'var(--bg-hover)' : 'transparent',
+                                                            color: isActive(child.path) ? 'var(--color-primary-600)' : 'var(--text-secondary)',
+                                                            fontWeight: isActive(child.path) ? 600 : 400,
+                                                            fontSize: '0.875rem'
+                                                        }}
+                                                    >
+                                                        <child.icon size={18} style={{ flexShrink: 0 }} />
+                                                        <span style={{ whiteSpace: 'nowrap' }}>
+                                                            {child.label}
+                                                        </span>
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    ))}
+                            );
+                        }
+
+                        // Sinon, c'est un item simple
+                        return (
+                            <div
+                                key={item.path}
+                                style={{ position: 'relative' }}
+                                onMouseEnter={() => setHoveredItem(item.path)}
+                                onMouseLeave={() => setHoveredItem(null)}
+                            >
+                                <Link
+                                    to={item.path}
+                                    onClick={() => setSidebarOpen(false)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: isDesktop && isSidebarCollapsed ? 'center' : 'flex-start',
+                                        gap: '0.75rem',
+                                        padding: '0.75rem 1rem',
+                                        borderRadius: '0.5rem',
+                                        marginBottom: '0.25rem',
+                                        textDecoration: 'none',
+                                        transition: 'all 0.2s',
+                                        backgroundColor: isActive(item.path) ? 'var(--bg-hover)' : 'transparent',
+                                        color: isActive(item.path) ? 'var(--color-primary-600)' : 'var(--text-primary)',
+                                        fontWeight: 500,
+                                        overflow: 'hidden'
+                                    }}
+                                >
+                                    <item.icon size={20} style={{ flexShrink: 0 }} />
+                                    <span style={{
+                                        opacity: isDesktop && isSidebarCollapsed ? 0 : 1,
+                                        width: isDesktop && isSidebarCollapsed ? 0 : 'auto',
+                                        overflow: 'hidden',
+                                        transition: 'opacity var(--sidebar-transition), width var(--sidebar-transition)',
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                        {item.label}
+                                    </span>
+                                </Link>
+                                {/* Tooltip */}
+                                {isDesktop && isSidebarCollapsed && hoveredItem === item.path && (
+                                    <div className="tooltip" style={{ opacity: 1 }}>
+                                        {item.label}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </nav>
             </aside>
 

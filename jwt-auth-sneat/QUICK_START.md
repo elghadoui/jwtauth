@@ -64,9 +64,122 @@ Lisez ces fichiers pour comprendre où vous en êtes :
 
 ---
 
-## 🎯 Dernières Modifications (19 octobre 2025)
+## 🎯 Dernières Modifications
 
-### Sidebar Rétractable
+### 🆕 Page Stock avec Filtres Multi-Select (21 octobre 2025 - Session 4)
+
+**Système complet de gestion de stock pour la Coopérative Zaouia** :
+
+- ✅ **Tableau Réorganisé** : 12 colonnes (Variété, Producteur, Verger, Poid Ini, Poid Jr, Total Reception, Conditionnement, Sold Station, Estimation Verger, Sold Verger, Station, MAJ)
+- ✅ **Concaténation Verger** : Réf + Nom dans une seule colonne (ex: "4901 - DOMAIN SAAOUDA")
+- ✅ **Pourcentage Conditionnement** : Calcul automatique du % conditionné par rapport à la réception
+- ✅ **Filtres Multi-Select** : Sélection multiple pour Variété, Verger, Station (react-select)
+- ✅ **Barre de Recherche** : Recherche globale sur Producteur, Verger, Variété
+- ✅ **Ligne de Total** : Calcul automatique des totaux pour toutes les colonnes numériques
+- ✅ **Affichage en Tonnes** : Conversion kg → T automatique
+- ✅ **Lecture Seule** : Tableau optimisé pour l'affichage (colonne Actions supprimée)
+- ✅ **Pagination Intelligente** : S'adapte aux filtres en temps réel
+
+**Fichiers modifiés** :
+- `src/pages/Stock.jsx` : +400 lignes (filtres, multi-select, totaux)
+- `BACKEND_STOCK_MODEL.md` : Ajout du champ `conditionnement`
+- `package.json` : Installation de react-select
+
+**Pour tester** :
+1. Se connecter en tant que super-user
+2. Aller sur "Réception → Stock"
+3. Utiliser les filtres multi-select pour sélectionner plusieurs variétés
+4. Observer les totaux qui se mettent à jour automatiquement
+5. Vérifier le % de conditionnement sous chaque tonnage
+
+---
+
+### 🆕 Menu Hiérarchique avec Sections (21 octobre 2025 - Session 4)
+
+**Navigation organisée avec sections repliables** :
+
+- ✅ **Sections Expandables** : Clic pour ouvrir/fermer les sections
+- ✅ **Icône Animée** : Flèche (►) qui tourne (▼) à l'ouverture
+- ✅ **Hiérarchie Visuelle** : Sous-items indentés avec bordure gauche
+- ✅ **Indicateur Actif** : Section en surbrillance si elle contient la page active
+- ✅ **Compatible Sidebar Rétractée** : Tooltips et comportement adapté
+
+**Structure du menu** :
+```
+📊 Dashboard
+📦 Réception
+   └─ Stock
+👥 Gestion Utilisateur
+   ├─ Dashboard Utilisateur
+   ├─ Utilisateurs
+   └─ Rôles
+⚙️ Paramètres
+```
+
+**Fichiers modifiés** :
+- `src/components/Layout/Layout.jsx` : +200 lignes (système de sections)
+
+**Pour tester** :
+1. Cliquer sur "Réception" → Section se déploie
+2. Cliquer à nouveau → Section se replie
+3. Observer l'animation de la flèche
+4. Rétracter la sidebar → Sections se comportent comme des items normaux
+
+---
+
+### 🆕 Validation des Formulaires (19 octobre 2025 - Session 3)
+
+**Système complet de validation côté client** :
+
+- ✅ **Validation en Temps Réel** : Feedback immédiat lors de la saisie
+- ✅ **Messages User-Friendly** : Erreurs claires sous chaque champ
+- ✅ **Bordures Rouges** : Indication visuelle des champs invalides
+- ✅ **11 Règles Prédéfinies** : required, email, password, username, etc.
+- ✅ **4 Schémas Réutilisables** : login, user, password, role
+- ✅ **Icônes AlertCircle** : Meilleure accessibilité
+
+**Fichiers modifiés** :
+- `src/utils/validation.js` : +250 lignes (nouveau fichier central)
+- `src/pages/Login.jsx` : Validation complète temps réel
+- `src/pages/Roles.jsx` : Validation du nom de rôle
+
+**Documentation** : Voir `FORM_VALIDATION.md` pour tous les détails
+
+**Pour tester** :
+1. Page Login → Essayer de soumettre sans remplir → Messages d'erreur inline
+2. Créer un rôle → Taper un nom avec espaces → Erreur en temps réel
+3. Taper moins de 3 caractères dans username → Message "minimum 3 caractères"
+
+---
+
+### 🆕 Gestion des Erreurs API (19 octobre 2025 - Session 3)
+
+**Nouveau système complet de gestion d'erreurs** :
+
+- ✅ **Retry Automatique** : 3 tentatives avec exponential backoff (1s, 2s, 4s)
+- ✅ **Messages User-Friendly** : Conversion automatique des erreurs techniques
+- ✅ **Timeout** : 30 secondes pour toutes les requêtes
+- ✅ **Toasts au lieu d'Alerts** : Meilleure UX dans toutes les pages
+- ✅ **Gestion Réseau** : Détection des problèmes de connexion
+- ✅ **Logs Améliorés** : Messages descriptifs dans la console
+
+**Fichiers modifiés** :
+- `src/services/api.js` : +90 lignes (fonctions `getErrorMessage()` et retry)
+- `src/pages/Users.jsx` : Tous les alerts remplacés par toasts
+- `src/pages/Roles.jsx` : Validation et messages améliorés
+- `src/pages/Profile.jsx` : Gestion d'erreur complète
+- `src/context/AuthContext.jsx` : Utilise `getErrorMessage()`
+
+**Documentation** : Voir `ERROR_HANDLING.md` pour tous les détails
+
+**Pour tester** :
+1. Désactiver le backend → Message de retry automatique
+2. Créer un utilisateur avec des données invalides → Message clair d'erreur
+3. Supprimer un rôle avec utilisateurs assignés → Warning intelligent
+
+---
+
+### Sidebar Rétractable (19 octobre 2025 - Session 2)
 - ✅ Variables CSS : `--sidebar-width-expanded`, `--sidebar-width-collapsed`
 - ✅ Bouton toggle avec icônes `ChevronsLeft`/`ChevronsRight`
 - ✅ Tooltips au survol en mode collapsed
@@ -80,7 +193,7 @@ Lisez ces fichiers pour comprendre où vous en êtes :
 3. La sidebar se réduit à 70px
 4. Passer la souris sur les icônes → tooltips apparaissent
 
-### Modale de Suppression d'Utilisateur
+### Modale de Suppression d'Utilisateur (19 octobre 2025 - Session 2)
 - ✅ Modale élégante avec icône `AlertTriangle`
 - ✅ Affichage des infos utilisateur (avatar, nom, email)
 - ✅ Toast de succès/erreur
@@ -221,4 +334,17 @@ Bon développement ! 🚀
 
 ---
 
-**Dernière mise à jour** : 19 octobre 2025, 01:40 AM
+**Dernière mise à jour** : 21 octobre 2025, Session 4
+
+---
+
+## 🎯 Prochaines Tâches Suggérées
+
+1. **Backend Stock** : Créer la migration pour ajouter le champ `conditionnement` à la table `tbl_stock`
+2. **Dashboard Principal** : Créer des widgets et statistiques
+3. **Dashboard Utilisateur** : Créer une page dédiée aux stats utilisateurs
+4. **Ajout de Pages** : Ajouter facilement de nouvelles pages sous "Réception" ou "Dashboard"
+5. **Export Stock** : Ajouter la fonctionnalité d'export Excel/PDF
+6. **Graphiques** : Intégrer des graphiques pour visualiser les données de stock
+
+À demain ! 👋

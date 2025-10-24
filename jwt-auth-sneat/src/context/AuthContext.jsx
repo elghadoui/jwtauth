@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import { authAPI, getErrorMessage } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -47,9 +47,10 @@ export const AuthProvider = ({ children }) => {
 
             return { success: true };
         } catch (error) {
+            console.error('Erreur de connexion:', error);
             return {
                 success: false,
-                message: error.response?.data?.message || 'Erreur de connexion'
+                message: getErrorMessage(error)
             };
         }
     };
@@ -59,9 +60,10 @@ export const AuthProvider = ({ children }) => {
             const response = await authAPI.register(userData);
             return { success: true, data: response.data };
         } catch (error) {
+            console.error('Erreur lors de l\'inscription:', error);
             return {
                 success: false,
-                message: error.response?.data?.message || 'Erreur lors de l\'inscription'
+                message: getErrorMessage(error)
             };
         }
     };

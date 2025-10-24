@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react';
-import { rolesAPI, usersAPI } from '../services/api';
-import { Plus, Trash2, Users, Shield, X } from 'lucide-react';
+import { rolesAPI, usersAPI, getErrorMessage } from '../services/api';
+import { useToast } from '../context/ToastContext';
+import { validateField, commonSchemas } from '../utils/validation';
+import { Plus, Trash2, Users, Shield, X, AlertCircle } from 'lucide-react';
+import Pagination from '../components/Pagination';
 
 const Roles = () => {
+    const toast = useToast();
     const [roles, setRoles] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [newRole, setNewRole] = useState('');
+    const [roleError, setRoleError] = useState('');
     const [selectedRole, setSelectedRole] = useState(null);
     const [showUsersModal, setShowUsersModal] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(9);
 
     useEffect(() => {
         loadData();
@@ -29,31 +36,68 @@ const Roles = () => {
             setRoles(rolesData);
             setUsers(usersRes.data);
         } catch (error) {
-            console.error('Erreur:', error);
+            console.error('Erreur lors du chargement des rôles:', error);
+            toast.error(getErrorMessage(error));
         } finally {
             setLoading(false);
         }
     };
 
+    const handleRoleChange = (e) => {
+        const value = e.target.value;
+        setNewRole(value);
+
+        // Valider en temps réel
+        const error = validateField(value, commonSchemas.role.roleName);
+        setRoleError(error || '');
+    };
+
     const handleCreateRole = async (e) => {
         e.preventDefault();
+
+        // Valider avant soumission
+        const error = validateField(newRole, commonSchemas.role.roleName);
+        if (error) {
+            setRoleError(error);
+            toast.error('Veuillez corriger les erreurs dans le formulaire');
+            return;
+        }
+
         try {
             await rolesAPI.create(newRole);
+            toast.success(`Le rôle "${newRole}" a été créé avec succès`);
             loadData();
             setShowModal(false);
             setNewRole('');
+            setRoleError('');
         } catch (error) {
-            console.error('Erreur:', error);
+            console.error('Erreur lors de la création du rôle:', error);
+            toast.error(getErrorMessage(error));
         }
     };
 
     const handleDeleteRole = async (roleName) => {
+        const userCount = getUserCountByRole(roleName);
+
+        if (userCount > 0) {
+            const usersWithRole = users.filter((user) => user.roles?.includes(roleName));
+            const userNames = usersWithRole.map(u => u.userName).join(', ');
+            toast.error(
+                `Impossible de supprimer le rôle "${roleName}".\n` +
+                `Il est actuellement assigné à ${userCount} utilisateur(s): ${userNames}.\n` +
+                `Veuillez d'abord retirer ce rôle de tous les utilisateurs.`
+            );
+            return;
+        }
+
         if (window.confirm(`Êtes-vous sûr de vouloir supprimer le rôle "${roleName}"?`)) {
             try {
                 await rolesAPI.delete(roleName);
+                toast.success(`Le rôle "${roleName}" a été supprimé avec succès`);
                 loadData();
             } catch (error) {
-                console.error('Erreur:', error);
+                console.error('Erreur lors de la suppression du rôle:', error);
+                toast.error(getErrorMessage(error));
             }
         }
     };
@@ -97,6 +141,12 @@ const Roles = () => {
     const usersInSelectedRole = selectedRole
         ? users.filter((user) => user.roles?.includes(selectedRole))
         : [];
+
+    // Pagination
+    const totalPages = Math.ceil(roles.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedRoles = roles.slice(startIndex, endIndex);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -178,8 +228,9 @@ const Roles = () => {
             </div>
 
             {/* Roles Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-                {roles.map((role, index) => {
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', padding: '1.5rem' }}>
+                    {paginatedRoles.map((role, index) => {
                     const colors = getRoleColor(index);
                     return (
                         <div key={role} className="card" style={{ transition: 'all 0.2s' }}>
@@ -247,6 +298,23 @@ const Roles = () => {
                         </div>
                     );
                 })}
+                </div>
+
+                {/* Pagination */}
+                {roles.length > 0 && (
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={roles.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setCurrentPage}
+                        onItemsPerPageChange={(newItemsPerPage) => {
+                            setItemsPerPage(newItemsPerPage);
+                            setCurrentPage(1);
+                        }}
+                        itemsPerPageOptions={[6, 9, 12, 18]}
+                    />
+                )}
             </div>
 
             {/* Empty State */}
@@ -306,14 +374,30 @@ const Roles = () => {
                                 <input
                                     type="text"
                                     value={newRole}
-                                    onChange={(e) => setNewRole(e.target.value)}
+                                    onChange={handleRoleChange}
                                     className="input-field"
+                                    style={{
+                                        borderColor: roleError ? '#ef4444' : 'var(--border-color)'
+                                    }}
                                     placeholder="Ex: Moderator, Manager..."
-                                    required
                                 />
-                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-                                    Le nom du rôle doit être unique
-                                </p>
+                                {roleError ? (
+                                    <div style={{
+                                        marginTop: '0.5rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        color: '#ef4444',
+                                        fontSize: '0.875rem'
+                                    }}>
+                                        <AlertCircle size={14} />
+                                        <span>{roleError}</span>
+                                    </div>
+                                ) : (
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                                        Le nom du rôle doit être unique et sans espaces
+                                    </p>
+                                )}
                             </div>
 
                             <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '1rem' }}>
@@ -325,6 +409,7 @@ const Roles = () => {
                                     onClick={() => {
                                         setShowModal(false);
                                         setNewRole('');
+                                        setRoleError('');
                                     }}
                                     className="btn-secondary"
                                     style={{ flex: 1 }}

@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Roles from './pages/Roles';
 import Profile from './pages/Profile';
+import Stock from './pages/Stock';
+import Receptions from './pages/Receptions';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -99,6 +101,8 @@ function App() {
             >
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
+              <Route path="receptions" element={<Receptions />} />
+              <Route path="stock" element={<Stock />} />
               <Route path="users" element={<Users />} />
               <Route path="roles" element={<Roles />} />
               <Route path="profile" element={<Profile />} />

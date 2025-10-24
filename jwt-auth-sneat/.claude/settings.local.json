@@ -1,8 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run dev:*)",
-      "Read(//c/Projets/Auth/JwtAuth/**)",
+      "Bash(git commit -m \"$(cat <<''EOF''\ndocs: Ajout du guide de démarrage rapide\n\nCréation de QUICK_START.md pour faciliter la reprise du travail :\n- Commandes de démarrage\n- État actuel du projet\n- Fichiers de documentation à consulter\n- Dernières modifications détaillées\n- Astuces pour continuer le développement\n- Aide au dépannage\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(npm run dev)",
+      "Read(//c/Projets/Auth/JwtAuth/JwtAuth/**)",
+      "Bash(dotnet ef migrations add AddStockTable)",
+      "Bash(dotnet build)",
+      "Bash(dotnet ef database update)",
+      "Bash(npm install react-select)",
+      "Bash(git restore:*)",
+      "Bash(npm install:*)",
       "Bash(git add:*)"
     ],
     "deny": [],

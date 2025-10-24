@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { usersAPI, rolesAPI } from '../services/api';
+import { usersAPI, rolesAPI, getErrorMessage } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { Search, Plus, Edit, Trash2, Filter, Download, X, Shield, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import Pagination from '../components/Pagination';
 
 const Users = () => {
     const toast = useToast();
@@ -21,6 +22,8 @@ const Users = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const [formData, setFormData] = useState({
         username: '',
@@ -34,6 +37,16 @@ const Users = () => {
 
     useEffect(() => {
         loadData();
+    }, []);
+
+    // Rafraîchir les données quand la page devient visible (après navigation)
+    useEffect(() => {
+        const handleFocus = () => {
+            loadData();
+        };
+
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
     }, []);
 
     const loadData = async () => {
@@ -58,7 +71,8 @@ const Users = () => {
             console.log('rolesData:', rolesData);
             setRoles(rolesData);
         } catch (error) {
-            console.error('Erreur:', error);
+            console.error('Erreur lors du chargement des données:', error);
+            toast.error(getErrorMessage(error));
         } finally {
             setLoading(false);
         }
@@ -70,15 +84,15 @@ const Users = () => {
         // Validation du mot de passe si on veut le changer
         if (editingUser && changePassword) {
             if (!formData.password) {
-                alert('Veuillez entrer un nouveau mot de passe');
+                toast.error('Veuillez entrer un nouveau mot de passe');
                 return;
             }
             if (formData.password !== formData.confirmPassword) {
-                alert('Les mots de passe ne correspondent pas');
+                toast.error('Les mots de passe ne correspondent pas');
                 return;
             }
             if (formData.password.length < 6) {
-                alert('Le mot de passe doit contenir au moins 6 caractères');
+                toast.error('Le mot de passe doit contenir au moins 6 caractères');
                 return;
             }
         }
@@ -86,15 +100,15 @@ const Users = () => {
         // Validation pour création
         if (!editingUser) {
             if (!formData.password) {
-                alert('Le mot de passe est requis');
+                toast.error('Le mot de passe est requis');
                 return;
             }
             if (formData.password !== formData.confirmPassword) {
-                alert('Les mots de passe ne correspondent pas');
+                toast.error('Les mots de passe ne correspondent pas');
                 return;
             }
             if (formData.password.length < 6) {
-                alert('Le mot de passe doit contenir au moins 6 caractères');
+                toast.error('Le mot de passe doit contenir au moins 6 caractères');
                 return;
             }
         }
@@ -113,19 +127,20 @@ const Users = () => {
                     dataToSend.password = formData.password;
                 }
                 await usersAPI.update(editingUser.id, dataToSend);
+                toast.success(`L'utilisateur ${formData.username} a été modifié avec succès`);
             } else {
                 // Pour création, inclure username et password
                 dataToSend.username = formData.username;
                 dataToSend.password = formData.password;
                 await usersAPI.create(dataToSend);
+                toast.success(`L'utilisateur ${formData.username} a été créé avec succès`);
             }
 
             loadData();
             closeModal();
         } catch (error) {
-            console.error('Erreur:', error);
-            const errorMessage = error.response?.data?.message || 'Erreur lors de l\'enregistrement';
-            alert(errorMessage);
+            console.error('Erreur lors de l\'enregistrement:', error);
+            toast.error(getErrorMessage(error));
         }
     };
 
@@ -149,9 +164,8 @@ const Users = () => {
             loadData();
             closeDeleteModal();
         } catch (error) {
-            console.error('Erreur:', error);
-            const errorMessage = error.response?.data?.message || 'Erreur lors de la suppression';
-            toast.error(errorMessage);
+            console.error('Erreur lors de la suppression:', error);
+            toast.error(getErrorMessage(error));
         } finally {
             setIsDeleting(false);
         }
@@ -196,12 +210,24 @@ const Users = () => {
         setShowConfirmPassword(false);
     };
 
-    const openRolesModal = (user) => {
+    const openRolesModal = async (user) => {
         console.log('=== Opening Roles Modal ===');
         console.log('Selected user:', user);
         console.log('User roles:', user.roles);
         console.log('User roles type:', typeof user.roles);
         console.log('Is array:', Array.isArray(user.roles));
+
+        // Rafraîchir la liste des rôles disponibles avant d'ouvrir le modal
+        try {
+            const rolesRes = await rolesAPI.getAll();
+            const rolesData = rolesRes.data.map(role =>
+                typeof role === 'string' ? role : role.name
+            );
+            setRoles(rolesData);
+        } catch (error) {
+            console.error('Erreur lors du chargement des rôles:', error);
+        }
+
         setSelectedUser(user);
         setShowRolesModal(true);
     };
@@ -251,32 +277,17 @@ const Users = () => {
                 setSelectedUser(updatedUser);
             }
 
+            toast.success(`Rôle ${actualHasRole ? 'retiré' : 'assigné'} avec succès`);
             console.log('=== Succès ===');
         } catch (error) {
-            console.error('=== ERREUR COMPLÈTE ===');
+            console.error('=== ERREUR lors de la modification du rôle ===');
             console.error('Error object:', error);
             console.error('Error response:', error.response);
             console.error('Error response data:', error.response?.data);
             console.error('Error response status:', error.response?.status);
             console.error('Error message:', error.message);
 
-            // Afficher l'erreur de manière plus détaillée
-            let errorMessage = 'Erreur lors de la modification du rôle';
-
-            if (error.response?.data) {
-                if (typeof error.response.data === 'string') {
-                    errorMessage = error.response.data;
-                } else if (error.response.data.message) {
-                    errorMessage = error.response.data.message;
-                } else if (error.response.data.errors) {
-                    errorMessage = JSON.stringify(error.response.data.errors);
-                } else {
-                    errorMessage = JSON.stringify(error.response.data);
-                }
-            }
-
-            console.error('Message à afficher:', errorMessage);
-            alert(errorMessage);
+            toast.error(getErrorMessage(error));
         } finally {
             setAssigningRoles(false);
         }
@@ -289,6 +300,17 @@ const Users = () => {
         const matchesRole = filterRole === 'all' || user.roles?.includes(filterRole);
         return matchesSearch && matchesRole;
     });
+
+    // Pagination
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterRole]);
 
     if (loading) {
         return (
@@ -372,7 +394,7 @@ const Users = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredUsers.map((user) => (
+                            {paginatedUsers.map((user) => (
                                 <tr key={user.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.2s' }}>
                                     <td style={{ padding: '1rem 1.5rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -488,6 +510,21 @@ const Users = () => {
                         </div>
                     )}
                 </div>
+
+                {/* Pagination */}
+                {filteredUsers.length > 0 && (
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={filteredUsers.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setCurrentPage}
+                        onItemsPerPageChange={(newItemsPerPage) => {
+                            setItemsPerPage(newItemsPerPage);
+                            setCurrentPage(1);
+                        }}
+                    />
+                )}
             </div>
 
             {/* Modal */}

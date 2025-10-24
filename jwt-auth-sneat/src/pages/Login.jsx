@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { validateField, commonSchemas } from '../utils/validation';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const Login = () => {
@@ -10,7 +11,7 @@ const Login = () => {
     const toast = useToast();
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [errors, setErrors] = useState({});
 
     const [formData, setFormData] = useState({
         username: '',
@@ -20,16 +21,44 @@ const Login = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
+        const newValue = type === 'checkbox' ? checked : value;
+
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: newValue
         }));
+
+        // Valider le champ en temps réel
+        if (type !== 'checkbox' && commonSchemas.login[name]) {
+            const error = validateField(newValue, commonSchemas.login[name]);
+            setErrors(prev => ({
+                ...prev,
+                [name]: error
+            }));
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Valider tous les champs
+        const validationErrors = {};
+        for (const fieldName in commonSchemas.login) {
+            const error = validateField(formData[fieldName], commonSchemas.login[fieldName]);
+            if (error) {
+                validationErrors[fieldName] = error;
+            }
+        }
+
+        setErrors(validationErrors);
+
+        // Si des erreurs, arrêter
+        if (Object.keys(validationErrors).length > 0) {
+            toast.error('Veuillez corriger les erreurs dans le formulaire');
+            return;
+        }
+
         setLoading(true);
-        setError('');
 
         const result = await login({
             username: formData.username,
@@ -40,7 +69,6 @@ const Login = () => {
             toast.success('Connexion réussie ! Bienvenue.');
             navigate('/dashboard');
         } else {
-            setError(result.message);
             toast.error(result.message || 'Échec de la connexion');
         }
         setLoading(false);
@@ -85,21 +113,6 @@ const Login = () => {
 
                 {/* Card */}
                 <div className="card">
-                    {error && (
-                        <div style={{
-                            marginBottom: '1rem',
-                            padding: '1rem',
-                            backgroundColor: '#fef2f2',
-                            border: '1px solid #fecaca',
-                            borderRadius: '0.5rem',
-                            display: 'flex',
-                            alignItems: 'flex-start'
-                        }}>
-                            <AlertCircle style={{ color: '#ef4444', marginRight: '0.5rem', flexShrink: 0 }} size={18} />
-                            <span style={{ fontSize: '0.875rem', color: '#b91c1c' }}>{error}</span>
-                        </div>
-                    )}
-
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {/* Username */}
                         <div>
@@ -118,9 +131,24 @@ const Login = () => {
                                 value={formData.username}
                                 onChange={handleChange}
                                 className="input-field"
+                                style={{
+                                    borderColor: errors.username ? '#ef4444' : 'var(--border-color)'
+                                }}
                                 placeholder="Entrez votre nom d'utilisateur"
-                                required
                             />
+                            {errors.username && (
+                                <div style={{
+                                    marginTop: '0.5rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    color: '#ef4444',
+                                    fontSize: '0.875rem'
+                                }}>
+                                    <AlertCircle size={14} />
+                                    <span>{errors.username}</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Password */}
@@ -157,9 +185,11 @@ const Login = () => {
                                     value={formData.password}
                                     onChange={handleChange}
                                     className="input-field"
-                                    style={{ paddingRight: '2.5rem' }}
+                                    style={{
+                                        paddingRight: '2.5rem',
+                                        borderColor: errors.password ? '#ef4444' : 'var(--border-color)'
+                                    }}
                                     placeholder="Entrez votre mot de passe"
-                                    required
                                 />
                                 <button
                                     type="button"
@@ -179,6 +209,19 @@ const Login = () => {
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
+                            {errors.password && (
+                                <div style={{
+                                    marginTop: '0.5rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    color: '#ef4444',
+                                    fontSize: '0.875rem'
+                                }}>
+                                    <AlertCircle size={14} />
+                                    <span>{errors.password}</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Remember Me */}

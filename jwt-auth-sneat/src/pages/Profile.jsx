@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { usersAPI } from '../services/api';
+import { usersAPI, getErrorMessage } from '../services/api';
+import { useToast } from '../context/ToastContext';
 import { User, Mail, Shield, Calendar, Eye, EyeOff, Save, X } from 'lucide-react';
 
 const Profile = () => {
     const { user, login } = useAuth();
+    const toast = useToast();
     const [loading, setLoading] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [changePassword, setChangePassword] = useState(false);
@@ -45,6 +47,7 @@ const Profile = () => {
             }
         } catch (error) {
             console.error('Erreur lors du chargement du profil:', error);
+            toast.error(getErrorMessage(error));
         }
     };
 
@@ -56,17 +59,17 @@ const Profile = () => {
             // Validation du mot de passe si on veut le changer
             if (changePassword) {
                 if (!formData.newPassword) {
-                    alert('Veuillez entrer un nouveau mot de passe');
+                    toast.error('Veuillez entrer un nouveau mot de passe');
                     setLoading(false);
                     return;
                 }
                 if (formData.newPassword !== formData.confirmPassword) {
-                    alert('Les nouveaux mots de passe ne correspondent pas');
+                    toast.error('Les nouveaux mots de passe ne correspondent pas');
                     setLoading(false);
                     return;
                 }
                 if (formData.newPassword.length < 6) {
-                    alert('Le mot de passe doit contenir au moins 6 caractères');
+                    toast.error('Le mot de passe doit contenir au moins 6 caractères');
                     setLoading(false);
                     return;
                 }
@@ -85,14 +88,14 @@ const Profile = () => {
 
             await usersAPI.update(userDetails.id, dataToSend);
 
-            alert('Profil mis à jour avec succès !');
+            toast.success('Profil mis à jour avec succès !');
             setEditMode(false);
             setChangePassword(false);
             setFormData({ ...formData, currentPassword: '', newPassword: '', confirmPassword: '' });
             await loadUserDetails();
         } catch (error) {
-            console.error('Erreur lors de la mise à jour:', error);
-            alert('Erreur lors de la mise à jour du profil');
+            console.error('Erreur lors de la mise à jour du profil:', error);
+            toast.error(getErrorMessage(error));
         } finally {
             setLoading(false);
         }
