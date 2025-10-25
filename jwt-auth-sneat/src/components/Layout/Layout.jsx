@@ -22,6 +22,7 @@ import {
     Package,
     Inbox,
     FileText,
+    Ship,
 } from 'lucide-react';
 
 const Layout = () => {
@@ -83,10 +84,13 @@ const Layout = () => {
         },
         {
             id: 'export',
-            icon: FileText,
+            icon: Ship,
             label: 'Export',
             isSection: true,
-            children: []
+            children: [
+                { path: '/exports', icon: LayoutDashboard, label: 'Tableau de Bord', role: 'super-user' },
+                { path: '/exports/list', icon: FileText, label: 'Liste des Dossiers', role: 'super-user' },
+            ]
         },
         {
             path: '/settings',

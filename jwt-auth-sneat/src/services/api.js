@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://localhost:7053/api'; // Changez selon votre configuration
+const API_URL = 'http://localhost:5174/api'; // Changez selon votre configuration
 
 // Configuration pour retry automatique
 const MAX_RETRIES = 3;
@@ -219,6 +219,98 @@ export const stockAPI = {
 export const receptionsAPI = {
     getAll: () => api.get('/tbreception/list'),
     getStats: () => api.get('/tbreception/stats'),
+};
+
+// Export API
+export const exportAPI = {
+    // Récupérer tous les dossiers d'export avec filtres et pagination
+    getAll: (filters = {}) => {
+        const params = new URLSearchParams();
+
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+        if (filters.navire) params.append('navire', filters.navire);
+        if (filters.codpay) params.append('codpay', filters.codpay);
+        if (filters.station) params.append('station', filters.station);
+        if (filters.rsclient) params.append('rsclient', filters.rsclient);
+        if (filters.codvar) params.append('codvar', filters.codvar);
+        if (filters.refexp) params.append('refexp', filters.refexp);
+        if (filters.exporter) params.append('exporter', filters.exporter);
+        if (filters.search) params.append('search', filters.search);
+        if (filters.sortBy) params.append('sortBy', filters.sortBy);
+        if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
+        if (filters.page) params.append('page', filters.page);
+        if (filters.pageSize) params.append('pageSize', filters.pageSize);
+
+        return api.get(`/dossierexport/list?${params.toString()}`);
+    },
+
+    // Récupérer un dossier par son ID
+    getById: (id) => api.get(`/dossierexport/${id}`),
+
+    // Récupérer les statistiques globales
+    getGlobalStats: (filters = {}) => {
+        const params = new URLSearchParams();
+
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+        if (filters.station) params.append('station', filters.station);
+
+        return api.get(`/dossierexport/stats?${params.toString()}`);
+    },
+
+    // Récupérer les statistiques temporelles
+    getTimelineStats: (period = 'month', filters = {}) => {
+        const params = new URLSearchParams();
+
+        params.append('period', period);
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+
+        return api.get(`/dossierexport/stats/timeline?${params.toString()}`);
+    },
+
+    // Récupérer les statistiques par pays
+    getStatsByCountry: (limit = 10, filters = {}) => {
+        const params = new URLSearchParams();
+
+        params.append('limit', limit);
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+
+        return api.get(`/dossierexport/stats/by-country?${params.toString()}`);
+    },
+
+    // Récupérer les statistiques par produit
+    getStatsByProduct: (limit = 10, filters = {}) => {
+        const params = new URLSearchParams();
+
+        params.append('limit', limit);
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+
+        return api.get(`/dossierexport/stats/by-product?${params.toString()}`);
+    },
+
+    // Récupérer les statistiques par navire
+    getStatsByNavire: (filters = {}) => {
+        const params = new URLSearchParams();
+
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+
+        return api.get(`/dossierexport/stats/by-navire?${params.toString()}`);
+    },
+
+    // Récupérer les statistiques par station
+    getStatsByStation: (filters = {}) => {
+        const params = new URLSearchParams();
+
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+
+        return api.get(`/dossierexport/stats/by-station?${params.toString()}`);
+    },
 };
 
 export default api;

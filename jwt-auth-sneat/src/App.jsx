@@ -10,6 +10,9 @@ import Roles from './pages/Roles';
 import Profile from './pages/Profile';
 import Stock from './pages/Stock';
 import Receptions from './pages/Receptions';
+import ExportDashboard from './pages/ExportDashboardImproved';
+import ExportList from './pages/ExportList';
+import ExportDetails from './pages/ExportDetails';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -106,6 +109,9 @@ function App() {
               <Route path="users" element={<Users />} />
               <Route path="roles" element={<Roles />} />
               <Route path="profile" element={<Profile />} />
+              <Route path="exports" element={<ExportDashboard />} />
+              <Route path="exports/list" element={<ExportList />} />
+              <Route path="exports/details/:id" element={<ExportDetails />} />
               <Route
                 path="settings"
                 element={
