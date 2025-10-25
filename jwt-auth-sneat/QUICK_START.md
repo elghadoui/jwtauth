@@ -66,6 +66,48 @@ Lisez ces fichiers pour comprendre où vous en êtes :
 
 ## 🎯 Dernières Modifications
 
+### 🐛 Correction Erreur Backend RapportVenteController (25 octobre 2025 - Session 6)
+
+**Problème résolu dans le backend** :
+
+Le backend ne compilait pas à cause d'une erreur de type dans `RapportVenteController.cs`.
+
+**Erreur** :
+```
+Impossible d'appliquer l'opérateur '??' aux opérandes de type
+'<anonymous type: int totalVentes, decimal poidsTotalBrut, ...>'
+et '<anonymous type: int totalVentes, int poidsTotalBrut, ...>'
+```
+
+**Localisation** :
+- Fichier: `C:\Projets\Auth\JwtAuth\JwtAuth\Controllers\RapportVenteController.cs`
+- Lignes: 151-163 (méthode `GetGlobalStats`)
+
+**Solution appliquée** :
+Changement des valeurs par défaut de `0` (int) en `0m` (decimal) pour les propriétés suivantes :
+- `poidsTotalBrut`
+- `poidsTotalPese`
+- `chiffreAffaires`
+- `montantRegle`
+- `soldeRestant`
+- `prixMoyenKg`
+
+**Résultat** :
+- ✅ Backend compile avec succès
+- ✅ 0 erreur de compilation
+- ✅ 74 warnings (normaux, concernent la nullabilité)
+
+**Fichier modifié** :
+- `RapportVenteController.cs:151-163`
+
+**Pour tester** :
+1. Ouvrir un terminal dans `C:\Projets\Auth\JwtAuth\JwtAuth`
+2. Exécuter `dotnet build` → Devrait compiler sans erreur
+3. Exécuter `dotnet run` → Backend démarre sur https://localhost:7053
+4. Tester l'endpoint `GET /api/rapportvente/stats/global` via Swagger
+
+---
+
 ### 🆕 Tableau de Bord Réceptions Complet (24 octobre 2025 - Session 5)
 
 **Nouvelle page complète de suivi des réceptions avec visualisations** :
@@ -382,7 +424,7 @@ Bon développement ! 🚀
 
 ---
 
-**Dernière mise à jour** : 24 octobre 2025, Session 5
+**Dernière mise à jour** : 25 octobre 2025, Session 6
 
 ---
 

@@ -298,6 +298,14 @@ npm run lint
 
 ## Historique des Versions 📅
 
+### v0.3.1 - 25 octobre 2025 (Session 6)
+- 🐛 Correction d'une erreur de compilation dans le backend
+  - Fichier: `RapportVenteController.cs` (ligne 151-163)
+  - Problème: Opérateur `??` appliqué à deux types anonymes incompatibles (decimal vs int)
+  - Solution: Ajout du suffixe `m` pour forcer les valeurs par défaut en `decimal`
+  - Propriétés corrigées: poidsTotalBrut, poidsTotalPese, chiffreAffaires, montantRegle, soldeRestant, prixMoyenKg
+  - Résultat: Backend compile avec succès (0 erreur, 74 warnings normaux)
+
 ### v0.3.0 - 19 octobre 2025 (Session 2)
 - 🎯 Amélioration du message de suppression d'utilisateur
   - Modale de confirmation élégante avec icône AlertTriangle
