@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://go.microsoft.com/fwlink/?LinkID=208121. -->
+<Project>
+  <PropertyGroup>
+    <_PublishTargetUrl>\\192.168.1.254\jwtauth\Release\</_PublishTargetUrl>
+    <History>True|2025-10-27T10:03:02.1569051Z||;False|2025-10-27T11:00:24.0167096+01:00||;False|2025-10-27T10:59:26.0779279+01:00||;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+</Project>
