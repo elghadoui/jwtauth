@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5174/api'; // Changez selon votre configuration
+const API_URL = 'http://localhost:5000/api'; // Backend .NET API
 
 // Configuration pour retry automatique
 const MAX_RETRIES = 3;
@@ -310,6 +310,117 @@ export const exportAPI = {
         if (filters.dateTo) params.append('dateTo', filters.dateTo);
 
         return api.get(`/dossierexport/stats/by-station?${params.toString()}`);
+    },
+
+    // Récupérer les statistiques par client
+    getStatsByClient: (limit = 10, filters = {}) => {
+        const params = new URLSearchParams();
+
+        params.append('limit', limit);
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+
+        return api.get(`/dossierexport/stats/by-client?${params.toString()}`);
+    },
+};
+
+// Sales API (Ventes Locales)
+export const salesAPI = {
+    // Récupérer toutes les ventes avec filtres et pagination
+    getAll: (filters = {}) => {
+        const params = new URLSearchParams();
+
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+        if (filters.station) params.append('station', filters.station);
+        if (filters.codvar) params.append('codvar', filters.codvar);
+        if (filters.refach) params.append('refach', filters.refach);
+        if (filters.codtype) params.append('codtype', filters.codtype);
+        if (filters.search) params.append('search', filters.search);
+        if (filters.sortBy) params.append('sortBy', filters.sortBy);
+        if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
+        if (filters.page) params.append('page', filters.page);
+        if (filters.pageSize) params.append('pageSize', filters.pageSize);
+
+        return api.get(`/rapportvente?${params.toString()}`);
+    },
+
+    // Récupérer une vente par son ID
+    getById: (id) => api.get(`/rapportvente/${id}`),
+
+    // Récupérer les statistiques globales
+    getGlobalStats: (filters = {}) => {
+        const params = new URLSearchParams();
+
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+
+        return api.get(`/rapportvente/stats/global?${params.toString()}`);
+    },
+
+    // Récupérer les statistiques temporelles
+    getTimelineStats: (period = 'week', filters = {}) => {
+        const params = new URLSearchParams();
+
+        params.append('period', period);
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+
+        return api.get(`/rapportvente/stats/timeline?${params.toString()}`);
+    },
+
+    // Récupérer les statistiques par station
+    getStatsByStation: (filters = {}) => {
+        const params = new URLSearchParams();
+
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+
+        return api.get(`/rapportvente/stats/by-station?${params.toString()}`);
+    },
+
+    // Récupérer les statistiques par variété
+    getStatsByVariete: (limit = 5, filters = {}) => {
+        const params = new URLSearchParams();
+
+        params.append('limit', limit);
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+
+        return api.get(`/rapportvente/stats/by-variete?${params.toString()}`);
+    },
+
+    // Récupérer les statistiques par acheteur
+    getStatsByAcheteur: (limit = 5, filters = {}) => {
+        const params = new URLSearchParams();
+
+        params.append('limit', limit);
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+
+        return api.get(`/rapportvente/stats/by-acheteur?${params.toString()}`);
+    },
+
+    // Récupérer les prix moyens par type et variété
+    getAveragePriceByTypeAndVariete: (filters = {}) => {
+        const params = new URLSearchParams();
+
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+
+        return api.get(`/rapportvente/stats/average-price?${params.toString()}`);
+    },
+
+    // Récupérer l'évolution des prix moyens
+    getPriceTimelineStats: (period = 'week', filters = {}) => {
+        const params = new URLSearchParams();
+
+        params.append('period', period);
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+        if (filters.codvar) params.append('codvar', filters.codvar);
+
+        return api.get(`/rapportvente/stats/price-timeline?${params.toString()}`);
     },
 };
 

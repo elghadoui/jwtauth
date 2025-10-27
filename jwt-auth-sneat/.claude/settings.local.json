@@ -10,7 +10,12 @@
       "Bash(npm install react-select)",
       "Bash(git restore:*)",
       "Bash(npm install:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(dotnet run:*)",
+      "Read(//c/Users/info/Desktop/walid/jwtauth/**)",
+      "Read(//c/Projets/Auth/JwtAuth/**)",
+      "Read(//c/Users/info/Desktop/walid/**)"
     ],
     "deny": [],
     "ask": []

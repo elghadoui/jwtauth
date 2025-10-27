@@ -13,6 +13,7 @@ import Receptions from './pages/Receptions';
 import ExportDashboard from './pages/ExportDashboardImproved';
 import ExportList from './pages/ExportList';
 import ExportDetails from './pages/ExportDetails';
+import SalesDashboard from './pages/SalesDashboard';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -112,6 +113,7 @@ function App() {
               <Route path="exports" element={<ExportDashboard />} />
               <Route path="exports/list" element={<ExportList />} />
               <Route path="exports/details/:id" element={<ExportDetails />} />
+              <Route path="sales" element={<SalesDashboard />} />
               <Route
                 path="settings"
                 element={

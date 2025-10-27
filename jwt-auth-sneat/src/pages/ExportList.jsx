@@ -398,7 +398,7 @@ const ExportList = () => {
                                     onClick={() => handleSort('navire')}
                                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                                 >
-                                    Navire{getSortIcon('navire')}
+                                    Navire / N° TC{getSortIcon('navire')}
                                 </th>
                                 <th
                                     onClick={() => handleSort('dtedep')}
@@ -411,6 +411,9 @@ const ExportList = () => {
                                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                                 >
                                     Pays{getSortIcon('nompay')}
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Exportateur
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Client
@@ -435,7 +438,7 @@ const ExportList = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="10" className="px-6 py-12 text-center">
+                                    <td colSpan="11" className="px-6 py-12 text-center">
                                         <div className="flex justify-center">
                                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                                         </div>
@@ -443,51 +446,75 @@ const ExportList = () => {
                                 </tr>
                             ) : exports.length === 0 ? (
                                 <tr>
-                                    <td colSpan="10" className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan="11" className="px-6 py-12 text-center text-gray-500">
                                         Aucun dossier trouvé
                                     </td>
                                 </tr>
                             ) : (
-                                exports.map((exp) => (
-                                    <tr key={exp.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {exp.numdos}
+                                <>
+                                    {exports.map((exp) => (
+                                        <tr key={exp.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                {exp.numdos}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600">
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-gray-900">{exp.navire || '-'}</span>
+                                                    <span className="text-xs text-gray-500">TC: {exp.numtc || '-'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                {formatDate(exp.dtedep)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                {exp.nompay || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                                                {exp.exporter || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                                                {exp.rsclient || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                                                {exp.produit || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                                                {formatNumber(exp.nbrpal)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                                                {formatNumber(exp.nbrcol)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                                                {formatNumber(exp.pdscom)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                <button
+                                                    onClick={() => navigate(`/exports/details/${exp.id}`)}
+                                                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                    Voir
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {/* Ligne de total */}
+                                    <tr className="bg-blue-50 border-t-2 border-blue-200 font-semibold">
+                                        <td colSpan="7" className="px-6 py-4 text-sm text-gray-900 text-right">
+                                            TOTAL ({formatNumber(exports.length)} dossiers sur cette page)
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {exp.navire || '-'}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                                            {formatNumber(exports.reduce((sum, exp) => sum + (exp.nbrpal || 0), 0))}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {formatDate(exp.dtedep)}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                                            {formatNumber(exports.reduce((sum, exp) => sum + (exp.nbrcol || 0), 0))}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {exp.nompay || '-'}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
+                                            {formatNumber(exports.reduce((sum, exp) => sum + (exp.pdscom || 0), 0))}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                                            {exp.rsclient || '-'}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                                            {exp.produit || '-'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                                            {formatNumber(exp.nbrpal)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                                            {formatNumber(exp.nbrcol)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                                            {formatNumber(exp.pdscom)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            <button
-                                                onClick={() => navigate(`/exports/details/${exp.id}`)}
-                                                className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                                Voir
-                                            </button>
-                                        </td>
+                                        <td className="px-6 py-4"></td>
                                     </tr>
-                                ))
+                                </>
                             )}
                         </tbody>
                     </table>

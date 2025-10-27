@@ -23,6 +23,7 @@ import {
     Inbox,
     FileText,
     Ship,
+    ShoppingCart,
 } from 'lucide-react';
 
 const Layout = () => {
@@ -90,6 +91,7 @@ const Layout = () => {
             children: [
                 { path: '/exports', icon: LayoutDashboard, label: 'Tableau de Bord', role: 'super-user' },
                 { path: '/exports/list', icon: FileText, label: 'Liste des Dossiers', role: 'super-user' },
+                { path: '/sales', icon: ShoppingCart, label: 'Ventes Locales', role: 'super-user' },
             ]
         },
         {

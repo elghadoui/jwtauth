@@ -2,38 +2,45 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { exportAPI, getErrorMessage } from '../services/api';
-import ExportStatsCards from '../components/Export/ExportStatsCards';
-import { TimelineChart, StationPieChart } from '../components/Export/ExportCharts';
-import ClientListCard from '../components/Export/ClientListCard';
-import ProductListCard from '../components/Export/ProductListCard';
-import CountryStatsCard from '../components/Export/CountryStatsCard';
+import { salesAPI, getErrorMessage } from '../services/api';
+import SalesStatsCards from '../components/Sales/SalesStatsCards';
+import { SalesTimelineChart, PriceTimelineChart, VarieteBarChart, SalesStationPieChart, AveragePriceChart } from '../components/Sales/SalesCharts';
+import AcheteurListCard from '../components/Sales/AcheteurListCard';
+import VarieteListCard from '../components/Sales/VarieteListCard';
 import PeriodFilter from '../components/Export/PeriodFilter';
 import Pagination from '../components/Pagination';
-import { Ship, Globe, Package, Building, Eye, TrendingUp, RefreshCw, Download, Search, Filter, X, Calendar, Users } from 'lucide-react';
+import { ShoppingCart, TrendingUp, RefreshCw, Download, Search, Filter, X, Calendar, Building, Package, Users, Eye, DollarSign } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import Select from 'react-select';
 
-const ExportDashboardImproved = () => {
+const SalesDashboard = () => {
     const { user } = useAuth();
     const toast = useToast();
     const navigate = useNavigate();
 
     const [stats, setStats] = useState(null);
     const [timelineData, setTimelineData] = useState([]);
-    const [statsByCountry, setStatsByCountry] = useState([]);
-    const [statsByProduct, setStatsByProduct] = useState([]);
-    const [statsByClient, setStatsByClient] = useState([]);
-    const [statsByNavire, setStatsByNavire] = useState([]);
+    const [priceTimelineData, setPriceTimelineData] = useState([]);
     const [statsByStation, setStatsByStation] = useState([]);
+    const [statsByVariete, setStatsByVariete] = useState([]);
+    const [statsByAcheteur, setStatsByAcheteur] = useState([]);
+    const [averagePriceData, setAveragePriceData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [autoRefresh, setAutoRefresh] = useState(true);
     const [selectedPeriod, setSelectedPeriod] = useState('all');
     const [dateFilters, setDateFilters] = useState({ dateFrom: null, dateTo: null });
     const [timelinePeriod, setTimelinePeriod] = useState('week');
+    const [activeTab, setActiveTab] = useState('sales'); // 'sales' ou 'price'
 
-    // États pour la liste des dossiers
-    const [exports, setExports] = useState([]);
+    // Filtre de variétés pour toute la page (filtre rapide)
+    const [selectedVarietesGlobal, setSelectedVarietesGlobal] = useState([]);
+
+    // Filtre de stations pour toute la page (filtre rapide)
+    const [selectedStationsGlobal, setSelectedStationsGlobal] = useState([]);
+
+    // États pour la liste des ventes
+    const [sales, setSales] = useState([]);
     const [loadingList, setLoadingList] = useState(false);
     const [totalCount, setTotalCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
@@ -43,15 +50,21 @@ const ExportDashboardImproved = () => {
     const [listFilters, setListFilters] = useState({
         dateFrom: '',
         dateTo: '',
-        navire: '',
-        codpay: '',
         station: '',
-        rsclient: '',
-        codvar: '',
-        exporter: '',
-        sortBy: 'dtedep',
+        codvar: [],
+        refach: '',
+        codtype: '',
+        sortBy: 'date_vente',
         sortOrder: 'desc',
     });
+
+    // Liste des variétés disponibles pour le filtre
+    const [varietes, setVarietes] = useState([]);
+    const [loadingVarietes, setLoadingVarietes] = useState(false);
+
+    // Liste des stations disponibles pour le filtre
+    const [stations, setStations] = useState([]);
+    const [loadingStations, setLoadingStations] = useState(false);
 
     const isSuperUser = user?.roles?.includes('super-user') || user?.roles?.includes('Super-User');
 
@@ -62,6 +75,8 @@ const ExportDashboardImproved = () => {
             return;
         }
         loadData();
+        loadVarietes();
+        loadStations();
 
         let intervalId;
         if (autoRefresh) {
@@ -73,11 +88,11 @@ const ExportDashboardImproved = () => {
         return () => {
             if (intervalId) clearInterval(intervalId);
         };
-    }, [isSuperUser, autoRefresh, dateFilters, timelinePeriod]);
+    }, [isSuperUser, autoRefresh, dateFilters, timelinePeriod, selectedVarietesGlobal, selectedStationsGlobal]);
 
     useEffect(() => {
         if (isSuperUser) {
-            loadExportList();
+            loadSalesList();
         }
     }, [currentPage, pageSize, isSuperUser, dateFilters]);
 
@@ -85,28 +100,42 @@ const ExportDashboardImproved = () => {
         try {
             if (showLoading) setLoading(true);
 
+            // Préparer les filtres avec dates, variétés et stations
             const filters = {
                 dateFrom: dateFilters.dateFrom,
                 dateTo: dateFilters.dateTo
             };
 
-            const [globalStats, timeline, countryStats, productStats, clientStats, navireStats, stationStats] = await Promise.all([
-                exportAPI.getGlobalStats(filters),
-                exportAPI.getTimelineStats(timelinePeriod, filters),
-                exportAPI.getStatsByCountry(5, filters),
-                exportAPI.getStatsByProduct(5, filters),
-                exportAPI.getStatsByClient(5, filters),
-                exportAPI.getStatsByNavire(filters),
-                exportAPI.getStatsByStation(filters),
+            // Ajouter les variétés si sélectionnées
+            if (selectedVarietesGlobal.length > 0) {
+                filters.codvar = selectedVarietesGlobal.map(v => v.value).join(',');
+            }
+
+            // Ajouter les stations si sélectionnées
+            if (selectedStationsGlobal.length > 0) {
+                filters.station = selectedStationsGlobal.map(s => s.value).join(',');
+            }
+
+            const [globalStats, timeline, priceTimeline, stationStats, varieteStats, acheteurStats, avgPriceData] = await Promise.all([
+                salesAPI.getGlobalStats(filters),
+                salesAPI.getTimelineStats(timelinePeriod, filters),
+                salesAPI.getPriceTimelineStats(timelinePeriod, filters),
+                salesAPI.getStatsByStation(filters),
+                salesAPI.getStatsByVariete(5, filters),
+                salesAPI.getStatsByAcheteur(5, filters),
+                salesAPI.getAveragePriceByTypeAndVariete(filters),
             ]);
 
             setStats(globalStats.data);
             setTimelineData(timeline.data);
-            setStatsByCountry(countryStats.data);
-            setStatsByProduct(productStats.data);
-            setStatsByClient(clientStats.data);
-            setStatsByNavire(navireStats.data);
+            setPriceTimelineData(priceTimeline.data);
             setStatsByStation(stationStats.data);
+            setStatsByVariete(varieteStats.data);
+            setStatsByAcheteur(acheteurStats.data);
+            setAveragePriceData(avgPriceData.data);
+
+            // Debug: Afficher les données de prix
+            console.log('Prix Timeline Data:', priceTimeline.data);
         } catch (error) {
             toast.error(getErrorMessage(error));
         } finally {
@@ -119,6 +148,60 @@ const ExportDashboardImproved = () => {
         setDateFilters(range);
     };
 
+    const loadVarietes = async () => {
+        try {
+            setLoadingVarietes(true);
+            // Récupérer toutes les variétés avec une limite élevée
+            const response = await salesAPI.getStatsByVariete(200, {});
+
+            // Transformer les données en format pour react-select
+            const varietesOptions = response.data
+                .filter(item => item.codvar && item.varietes)
+                .map(item => ({
+                    value: item.codvar,
+                    label: `${item.codvar} - ${item.varietes}`
+                }));
+
+            setVarietes(varietesOptions);
+        } catch (error) {
+            console.error('Erreur lors du chargement des variétés:', error);
+            toast.error('Erreur lors du chargement des variétés');
+        } finally {
+            setLoadingVarietes(false);
+        }
+    };
+
+    const loadStations = async () => {
+        try {
+            setLoadingStations(true);
+            // Récupérer toutes les stations
+            const response = await salesAPI.getStatsByStation({});
+
+            // Transformer les données en format pour react-select
+            const stationsOptions = response.data
+                .filter(item => item.station)
+                .map(item => ({
+                    value: item.station,
+                    label: item.station
+                }));
+
+            setStations(stationsOptions);
+        } catch (error) {
+            console.error('Erreur lors du chargement des stations:', error);
+            toast.error('Erreur lors du chargement des stations');
+        } finally {
+            setLoadingStations(false);
+        }
+    };
+
+    const handleVarietesGlobalChange = (selectedOptions) => {
+        setSelectedVarietesGlobal(selectedOptions || []);
+    };
+
+    const handleStationsGlobalChange = (selectedOptions) => {
+        setSelectedStationsGlobal(selectedOptions || []);
+    };
+
     const handleRefresh = () => {
         toast.info('Actualisation des données...');
         loadData();
@@ -127,26 +210,22 @@ const ExportDashboardImproved = () => {
     const exportToPDF = () => {
         const doc = new jsPDF();
 
-        // Titre
         doc.setFontSize(20);
-        doc.text('Rapport Export - Tableau de Bord', 14, 20);
+        doc.text('Rapport Ventes Locales - Tableau de Bord', 14, 20);
 
-        // Date du rapport
         doc.setFontSize(10);
         doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, 14, 28);
 
-        // Statistiques globales
         doc.setFontSize(14);
         doc.text('Statistiques Globales', 14, 40);
 
         const statsData = [
-            ['Total Dossiers', stats?.totalDossiers?.toLocaleString('fr-FR') || '0'],
-            ['Total Palettes', stats?.totalPalettes?.toLocaleString('fr-FR') || '0'],
-            ['Total Colis', stats?.totalColis?.toLocaleString('fr-FR') || '0'],
-            ['Poids Total (kg)', stats?.totalPoids?.toLocaleString('fr-FR') || '0'],
-            ['Navires', stats?.navireCount?.toLocaleString('fr-FR') || '0'],
-            ['Pays Destinations', stats?.paysCount?.toLocaleString('fr-FR') || '0'],
-            ['Clients', stats?.clientsCount?.toLocaleString('fr-FR') || '0'],
+            ['Total Ventes', stats?.totalVentes?.toLocaleString('fr-FR') || '0'],
+            ['Poids Total (kg)', ((stats?.poidsTotalPese || 0) / 1000).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' t'],
+            ['Chiffre d\'Affaires (DH)', stats?.chiffreAffaires?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) || '0'],
+            ['Montant Réglé (DH)', stats?.montantRegle?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) || '0'],
+            ['Solde Restant (DH)', stats?.soldeRestant?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) || '0'],
+            ['Nombre d\'Acheteurs', stats?.nombreAcheteurs?.toLocaleString('fr-FR') || '0'],
         ];
 
         autoTable(doc, {
@@ -156,58 +235,22 @@ const ExportDashboardImproved = () => {
             theme: 'grid',
         });
 
-        // Top Pays
-        doc.addPage();
-        doc.setFontSize(14);
-        doc.text('Top 10 Pays de Destination', 14, 20);
-
-        const countryData = statsByCountry.map((country, index) => [
-            index + 1,
-            country.nompay || country.codpay,
-            country.totalDossiers?.toLocaleString('fr-FR') || '0',
-            country.totalPalettes?.toLocaleString('fr-FR') || '0',
-            country.totalPoids?.toLocaleString('fr-FR') || '0',
-        ]);
-
-        autoTable(doc, {
-            startY: 25,
-            head: [['#', 'Pays', 'Dossiers', 'Palettes', 'Poids (kg)']],
-            body: countryData,
-            theme: 'striped',
-        });
-
-        // Top Produits
-        doc.addPage();
-        doc.setFontSize(14);
-        doc.text('Top 10 Produits Exportés', 14, 20);
-
-        const productData = statsByProduct.map((product, index) => [
-            index + 1,
-            product.produit || product.codvar,
-            product.totalDossiers?.toLocaleString('fr-FR') || '0',
-            product.totalPalettes?.toLocaleString('fr-FR') || '0',
-            product.totalPoids?.toLocaleString('fr-FR') || '0',
-        ]);
-
-        autoTable(doc, {
-            startY: 25,
-            head: [['#', 'Produit', 'Dossiers', 'Palettes', 'Poids (kg)']],
-            body: productData,
-            theme: 'striped',
-        });
-
-        // Sauvegarder
-        doc.save(`rapport-export-${new Date().toISOString().split('T')[0]}.pdf`);
+        doc.save(`rapport-ventes-${new Date().toISOString().split('T')[0]}.pdf`);
         toast.success('Rapport PDF généré avec succès');
     };
 
-    const loadExportList = async () => {
+    const loadSalesList = async () => {
         try {
             setLoadingList(true);
 
-            // Utiliser les dates du PeriodFilter pour synchroniser avec les stats/graphiques
-            const response = await exportAPI.getAll({
+            // Convertir le tableau de codes variété en chaîne séparée par des virgules
+            const codvarString = Array.isArray(listFilters.codvar) && listFilters.codvar.length > 0
+                ? listFilters.codvar.join(',')
+                : '';
+
+            const response = await salesAPI.getAll({
                 ...listFilters,
+                codvar: codvarString,
                 dateFrom: dateFilters.dateFrom || listFilters.dateFrom,
                 dateTo: dateFilters.dateTo || listFilters.dateTo,
                 search: searchTerm,
@@ -215,7 +258,7 @@ const ExportDashboardImproved = () => {
                 pageSize,
             });
 
-            setExports(response.data.data);
+            setSales(response.data.data);
             setTotalCount(response.data.totalCount);
         } catch (error) {
             toast.error(getErrorMessage(error));
@@ -226,26 +269,23 @@ const ExportDashboardImproved = () => {
 
     const handleSearch = () => {
         setCurrentPage(1);
-        loadExportList();
+        loadSalesList();
     };
 
     const handleResetFilters = () => {
         setSearchTerm('');
-        // Réinitialiser les filtres locaux SAUF les dates si elles viennent du PeriodFilter
         setListFilters({
             dateFrom: '',
             dateTo: '',
-            navire: '',
-            codpay: '',
             station: '',
-            rsclient: '',
-            codvar: '',
-            exporter: '',
-            sortBy: 'dtedep',
+            codvar: [],
+            refach: '',
+            codtype: '',
+            sortBy: 'date_vente',
             sortOrder: 'desc',
         });
         setCurrentPage(1);
-        setTimeout(loadExportList, 100);
+        setTimeout(loadSalesList, 100);
     };
 
     const handleFilterChange = (key, value) => {
@@ -266,7 +306,7 @@ const ExportDashboardImproved = () => {
             }));
         }
         setCurrentPage(1);
-        setTimeout(loadExportList, 100);
+        setTimeout(loadSalesList, 100);
     };
 
     const getSortIcon = (column) => {
@@ -282,7 +322,7 @@ const ExportDashboardImproved = () => {
 
     const formatNumber = (num) => {
         if (!num && num !== 0) return '0';
-        return num.toLocaleString('fr-FR');
+        return num.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     if (!isSuperUser) return null;
@@ -292,8 +332,8 @@ const ExportDashboardImproved = () => {
             {/* En-tête */}
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">📊 Tableau de Bord Export</h1>
-                    <p className="text-gray-600">Vue d'ensemble des dossiers d'exportation avec graphiques interactifs</p>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">📈 Tableau de Bord Ventes Locales</h1>
+                    <p className="text-gray-600">Analyse des ventes avec graphiques interactifs et statistiques détaillées</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <label className="flex items-center gap-2 text-sm text-gray-600 bg-white px-3 py-2 rounded-lg border border-gray-200">
@@ -319,40 +359,64 @@ const ExportDashboardImproved = () => {
                         <Download className="w-5 h-5" />
                         Export PDF
                     </button>
-                    <button
-                        onClick={() => navigate('/exports/list')}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                        <Eye className="w-5 h-5" />
-                        Voir la liste
-                    </button>
                 </div>
             </div>
 
-            {/* Filtres de période */}
+            {/* Filtres de période, variétés et stations */}
             <PeriodFilter
                 selectedPeriod={selectedPeriod}
                 onPeriodChange={handlePeriodChange}
+                varietes={varietes}
+                selectedVarietes={selectedVarietesGlobal}
+                onVarietesChange={handleVarietesGlobalChange}
+                loadingVarietes={loadingVarietes}
+                stations={stations}
+                selectedStations={selectedStationsGlobal}
+                onStationsChange={handleStationsGlobalChange}
+                loadingStations={loadingStations}
             />
 
             {/* Cartes de statistiques */}
-            <ExportStatsCards stats={stats} loading={loading} />
+            <SalesStatsCards stats={stats} loading={loading} />
 
-            {/* Graphique d'évolution temporelle + Performance des stations */}
+            {/* Graphique d'évolution temporelle + Ventes par stations */}
             <div className="flex gap-6 mb-6">
-                {/* Évolution des Exports - 70% */}
+                {/* Évolution des Ventes/Prix - 70% */}
                 <div className="bg-white rounded-lg shadow-sm p-6" style={{ width: '70%' }}>
+                    {/* Onglets */}
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            <TrendingUp className="w-5 h-5 text-blue-600" />
-                            <h2 className="text-lg font-semibold text-gray-900">Évolution des Exports</h2>
+                            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                                <button
+                                    onClick={() => setActiveTab('sales')}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                        activeTab === 'sales'
+                                            ? 'bg-blue-600 text-white shadow-md'
+                                            : 'text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    <TrendingUp className="w-4 h-4" />
+                                    Évolution des Ventes
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('price')}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                        activeTab === 'price'
+                                            ? 'bg-purple-600 text-white shadow-md'
+                                            : 'text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    <DollarSign className="w-4 h-4" />
+                                    Évolution des Prix
+                                </button>
+                            </div>
                         </div>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setTimelinePeriod('day')}
                                 className={`px-3 py-1 rounded text-sm ${
                                     timelinePeriod === 'day'
-                                        ? 'bg-blue-600 text-white'
+                                        ? activeTab === 'sales' ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
                             >
@@ -362,7 +426,7 @@ const ExportDashboardImproved = () => {
                                 onClick={() => setTimelinePeriod('week')}
                                 className={`px-3 py-1 rounded text-sm ${
                                     timelinePeriod === 'week'
-                                        ? 'bg-blue-600 text-white'
+                                        ? activeTab === 'sales' ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
                             >
@@ -372,7 +436,7 @@ const ExportDashboardImproved = () => {
                                 onClick={() => setTimelinePeriod('month')}
                                 className={`px-3 py-1 rounded text-sm ${
                                     timelinePeriod === 'month'
-                                        ? 'bg-blue-600 text-white'
+                                        ? activeTab === 'sales' ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
                             >
@@ -380,51 +444,110 @@ const ExportDashboardImproved = () => {
                             </button>
                         </div>
                     </div>
-                    <TimelineChart data={timelineData} loading={loading} />
+
+                    {/* Contenu des onglets */}
+                    {activeTab === 'sales' ? (
+                        <SalesTimelineChart data={timelineData} loading={loading} />
+                    ) : (
+                        <PriceTimelineChart data={priceTimelineData} loading={loading} />
+                    )}
                 </div>
 
-                {/* Performance des Stations - 30% */}
+                {/* Ventes par Station - 30% */}
                 <div className="bg-white rounded-lg shadow-sm p-6" style={{ width: '30%' }}>
                     <div className="flex items-center gap-2 mb-4">
                         <Building className="w-5 h-5 text-purple-600" />
-                        <h2 className="text-lg font-semibold text-gray-900">Performance Stations</h2>
+                        <h2 className="text-lg font-semibold text-gray-900">Ventes par Station</h2>
                     </div>
-                    <StationPieChart data={statsByStation} loading={loading} />
+                    <SalesStationPieChart data={statsByStation} loading={loading} />
                 </div>
             </div>
 
-            {/* Graphiques en grille */}
+            {/* Top 5 Variétés, Acheteurs, Prix moyens */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                {/* Destinations Export */}
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                    <CountryStatsCard data={statsByCountry} loading={loading} />
-                </div>
-
-                {/* Top produits (Liste) */}
+                {/* Top Variétés */}
                 <div className="bg-white rounded-lg shadow-sm p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Package className="w-5 h-5 text-green-600" />
-                        <h2 className="text-lg font-semibold text-gray-900">Top 5 Produits</h2>
+                        <h2 className="text-lg font-semibold text-gray-900">Top 5 Variétés</h2>
                     </div>
-                    <ProductListCard data={statsByProduct} loading={loading} />
+                    <VarieteListCard data={statsByVariete} loading={loading} />
                 </div>
 
-                {/* Top clients (Liste) */}
+                {/* Top Acheteurs */}
                 <div className="bg-white rounded-lg shadow-sm p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Users className="w-5 h-5 text-indigo-600" />
-                        <h2 className="text-lg font-semibold text-gray-900">Top 5 Clients</h2>
+                        <h2 className="text-lg font-semibold text-gray-900">Top 5 Acheteurs</h2>
                     </div>
-                    <ClientListCard data={statsByClient} loading={loading} />
+                    <AcheteurListCard data={statsByAcheteur} loading={loading} />
+                </div>
+
+                {/* Prix moyen par variété */}
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                        <DollarSign className="w-5 h-5 text-emerald-600" />
+                        <h2 className="text-lg font-semibold text-gray-900">Prix Moyens</h2>
+                    </div>
+                    <div className="text-xs text-gray-500 mb-3">Par type et variété</div>
+                    {loading ? (
+                        <div className="h-64 flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+                        </div>
+                    ) : averagePriceData.length === 0 ? (
+                        <div className="h-64 flex items-center justify-center text-gray-500">
+                            Aucune donnée disponible
+                        </div>
+                    ) : (
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {averagePriceData.slice(0, 10).map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-semibold text-gray-900 truncate">
+                                            {item.varietes || 'Inconnu'}
+                                        </p>
+                                        <p className="text-xs text-gray-500">{item.typeEcart || 'Type'}</p>
+                                    </div>
+                                    <div className="text-right flex-shrink-0 ml-2">
+                                        <p className="text-sm font-bold text-emerald-600">
+                                            {formatNumber(item.prixMoyen)} DH/kg
+                                        </p>
+                                        <p className="text-xs text-gray-500">{(item.poidsPese / 1000).toFixed(1)}t</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Liste des dossiers avec filtres et recherche */}
+            {/* Graphiques détaillés en grille */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                {/* Top Variétés - Graphique */}
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Package className="w-5 h-5 text-green-600" />
+                        <h2 className="text-lg font-semibold text-gray-900">Performance des Variétés</h2>
+                    </div>
+                    <VarieteBarChart data={statsByVariete} loading={loading} />
+                </div>
+
+                {/* Prix moyens - Graphique */}
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                        <DollarSign className="w-5 h-5 text-purple-600" />
+                        <h2 className="text-lg font-semibold text-gray-900">Prix Moyens par Type & Variété</h2>
+                    </div>
+                    <AveragePriceChart data={averagePriceData} loading={loading} />
+                </div>
+            </div>
+
+            {/* Liste des ventes avec filtres et recherche */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
                 <div className="mb-4">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-gray-900">
-                            📋 Liste des Dossiers ({formatNumber(totalCount)})
+                            🛒 Liste des Ventes ({formatNumber(totalCount)})
                         </h2>
                         {(dateFilters.dateFrom || dateFilters.dateTo) && (
                             <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-lg">
@@ -447,7 +570,7 @@ const ExportDashboardImproved = () => {
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <input
                                 type="text"
-                                placeholder="Rechercher par n° dossier, n° TC, navire, client, exportateur..."
+                                placeholder="Rechercher par n° vente, acheteur, variété..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -472,7 +595,6 @@ const ExportDashboardImproved = () => {
                         <button
                             onClick={handleResetFilters}
                             className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                            title="Réinitialise les filtres locaux (navire, pays, client, etc.). Pour changer la période, utilisez le filtre rapide en haut."
                         >
                             <X className="w-5 h-5" />
                             Réinitialiser
@@ -486,7 +608,7 @@ const ExportDashboardImproved = () => {
                                 <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                     <p className="text-sm text-blue-700">
                                         <Calendar className="w-4 h-4 inline mr-1" />
-                                        <strong>Filtre de période rapide actif</strong> - Les dates sont synchronisées avec les statistiques et graphiques. Pour modifier la période, utilisez le sélecteur de période en haut de la page.
+                                        <strong>Filtre de période rapide actif</strong> - Les dates sont synchronisées avec les statistiques et graphiques.
                                     </p>
                                 </div>
                             )}
@@ -504,11 +626,7 @@ const ExportDashboardImproved = () => {
                                         className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${
                                             dateFilters.dateFrom ? 'bg-blue-50 cursor-not-allowed opacity-75' : ''
                                         }`}
-                                        title={dateFilters.dateFrom ? 'Contrôlé par le filtre de période rapide' : ''}
                                     />
-                                    {dateFilters.dateFrom && (
-                                        <p className="text-xs text-blue-600 mt-1">🔒 Contrôlé par filtre rapide</p>
-                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -523,36 +641,6 @@ const ExportDashboardImproved = () => {
                                         className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${
                                             dateFilters.dateTo ? 'bg-blue-50 cursor-not-allowed opacity-75' : ''
                                         }`}
-                                        title={dateFilters.dateTo ? 'Contrôlé par le filtre de période rapide' : ''}
-                                    />
-                                    {dateFilters.dateTo && (
-                                        <p className="text-xs text-blue-600 mt-1">🔒 Contrôlé par filtre rapide</p>
-                                    )}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        <Ship className="w-4 h-4 inline mr-1" />
-                                        Navire
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={listFilters.navire}
-                                        onChange={(e) => handleFilterChange('navire', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                        placeholder="Nom du navire..."
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        <Globe className="w-4 h-4 inline mr-1" />
-                                        Code Pays
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={listFilters.codpay}
-                                        onChange={(e) => handleFilterChange('codpay', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                        placeholder="Code pays..."
                                     />
                                 </div>
                                 <div>
@@ -570,39 +658,74 @@ const ExportDashboardImproved = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Client
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={listFilters.rsclient}
-                                        onChange={(e) => handleFilterChange('rsclient', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                        placeholder="Client..."
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
                                         <Package className="w-4 h-4 inline mr-1" />
-                                        Variété
+                                        Variétés
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={listFilters.codvar}
-                                        onChange={(e) => handleFilterChange('codvar', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                        placeholder="Code variété..."
+                                    <Select
+                                        isMulti
+                                        value={varietes.filter(v => listFilters.codvar.includes(v.value))}
+                                        onChange={(selectedOptions) => {
+                                            const selectedCodes = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
+                                            handleFilterChange('codvar', selectedCodes);
+                                        }}
+                                        options={varietes}
+                                        isLoading={loadingVarietes}
+                                        placeholder="Sélectionnez une ou plusieurs variétés..."
+                                        noOptionsMessage={() => "Aucune variété disponible"}
+                                        loadingMessage={() => "Chargement..."}
+                                        className="react-select-container"
+                                        classNamePrefix="react-select"
+                                        styles={{
+                                            control: (base) => ({
+                                                ...base,
+                                                minHeight: '42px',
+                                                borderColor: '#d1d5db',
+                                                '&:hover': {
+                                                    borderColor: '#9ca3af'
+                                                }
+                                            }),
+                                            multiValue: (base) => ({
+                                                ...base,
+                                                backgroundColor: '#3b82f6',
+                                            }),
+                                            multiValueLabel: (base) => ({
+                                                ...base,
+                                                color: 'white',
+                                            }),
+                                            multiValueRemove: (base) => ({
+                                                ...base,
+                                                color: 'white',
+                                                ':hover': {
+                                                    backgroundColor: '#2563eb',
+                                                    color: 'white',
+                                                }
+                                            })
+                                        }}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Exportateur
+                                        <Users className="w-4 h-4 inline mr-1" />
+                                        Acheteur
                                     </label>
                                     <input
                                         type="text"
-                                        value={listFilters.exporter}
-                                        onChange={(e) => handleFilterChange('exporter', e.target.value)}
+                                        value={listFilters.refach}
+                                        onChange={(e) => handleFilterChange('refach', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                        placeholder="Exportateur..."
+                                        placeholder="Réf acheteur..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Type Écart
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={listFilters.codtype}
+                                        onChange={(e) => handleFilterChange('codtype', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        placeholder="Type..."
                                     />
                                 </div>
                             </div>
@@ -624,46 +747,37 @@ const ExportDashboardImproved = () => {
                         <thead className="bg-gray-50">
                             <tr>
                                 <th
-                                    onClick={() => handleSort('numdos')}
+                                    onClick={() => handleSort('numvnt')}
                                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                                 >
-                                    N° Dossier{getSortIcon('numdos')}
+                                    N° Vente{getSortIcon('numvnt')}
                                 </th>
                                 <th
-                                    onClick={() => handleSort('navire')}
+                                    onClick={() => handleSort('date_vente')}
                                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                                 >
-                                    Navire / N° TC{getSortIcon('navire')}
-                                </th>
-                                <th
-                                    onClick={() => handleSort('dtedep')}
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                >
-                                    Date Départ{getSortIcon('dtedep')}
-                                </th>
-                                <th
-                                    onClick={() => handleSort('nompay')}
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                >
-                                    Pays{getSortIcon('nompay')}
+                                    Date{getSortIcon('date_vente')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Exportateur
+                                    Acheteur
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Client
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Produit
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">
-                                    Palettes
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">
-                                    Colis
+                                    Variété
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">
                                     Poids (kg)
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">
+                                    Prix/kg
+                                </th>
+                                <th
+                                    onClick={() => handleSort('montant_vente')}
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 text-right"
+                                >
+                                    Montant (DH){getSortIcon('montant_vente')}
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">
+                                    Solde
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Actions
@@ -673,58 +787,51 @@ const ExportDashboardImproved = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {loadingList ? (
                                 <tr>
-                                    <td colSpan="11" className="px-6 py-12 text-center">
+                                    <td colSpan="9" className="px-6 py-12 text-center">
                                         <div className="flex justify-center">
                                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                                         </div>
                                     </td>
                                 </tr>
-                            ) : exports.length === 0 ? (
+                            ) : sales.length === 0 ? (
                                 <tr>
-                                    <td colSpan="11" className="px-6 py-12 text-center text-gray-500">
-                                        Aucun dossier trouvé
+                                    <td colSpan="9" className="px-6 py-12 text-center text-gray-500">
+                                        Aucune vente trouvée
                                     </td>
                                 </tr>
                             ) : (
                                 <>
-                                    {exports.map((exp) => (
-                                        <tr key={exp.id} className="hover:bg-gray-50">
+                                    {sales.map((sale) => (
+                                        <tr key={sale.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {exp.numdos}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium text-gray-900">{exp.navire || '-'}</span>
-                                                    <span className="text-xs text-gray-500">TC: {exp.numtc || '-'}</span>
-                                                </div>
+                                                {sale.numVnt}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {formatDate(exp.dtedep)}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {exp.nompay || '-'}
+                                                {formatDate(sale.dateVente)}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                                                {exp.exporter || '-'}
+                                                {sale.acheteurs || '-'}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                                                {exp.rsclient || '-'}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                                                {exp.produit || '-'}
+                                                {sale.varietes || '-'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                                                {formatNumber(exp.nbrpal)}
+                                                {formatNumber(sale.poidPese)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                                                {formatNumber(exp.nbrcol)}
+                                                {formatNumber(sale.prxKg)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                                                {formatNumber(exp.pdscom)}
+                                                {formatNumber(sale.montantVente)}
+                                            </td>
+                                            <td className={`px-6 py-4 whitespace-nowrap text-sm text-right ${
+                                                (sale.soldVente || 0) > 0 ? 'text-red-600 font-semibold' : 'text-green-600'
+                                            }`}>
+                                                {formatNumber(sale.soldVente || 0)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                 <button
-                                                    onClick={() => navigate(`/exports/details/${exp.id}`)}
+                                                    onClick={() => navigate(`/sales/details/${sale.id}`)}
                                                     className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
                                                 >
                                                     <Eye className="w-4 h-4" />
@@ -735,17 +842,18 @@ const ExportDashboardImproved = () => {
                                     ))}
                                     {/* Ligne de total */}
                                     <tr className="bg-blue-50 border-t-2 border-blue-200 font-semibold">
-                                        <td colSpan="7" className="px-6 py-4 text-sm text-gray-900 text-right">
-                                            TOTAL ({formatNumber(exports.length)} dossiers sur cette page)
+                                        <td colSpan="4" className="px-6 py-4 text-sm text-gray-900 text-right">
+                                            TOTAL ({sales.length} ventes sur cette page)
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                            {formatNumber(exports.reduce((sum, exp) => sum + (exp.nbrpal || 0), 0))}
+                                            {formatNumber(sales.reduce((sum, sale) => sum + (sale.poidPese || 0), 0))}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                            {formatNumber(exports.reduce((sum, exp) => sum + (exp.nbrcol || 0), 0))}
-                                        </td>
+                                        <td className="px-6 py-4"></td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
-                                            {formatNumber(exports.reduce((sum, exp) => sum + (exp.pdscom || 0), 0))}
+                                            {formatNumber(sales.reduce((sum, sale) => sum + (sale.montantVente || 0), 0))}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600 text-right">
+                                            {formatNumber(sales.reduce((sum, sale) => sum + (sale.soldVente || 0), 0))}
                                         </td>
                                         <td className="px-6 py-4"></td>
                                     </tr>
@@ -756,7 +864,7 @@ const ExportDashboardImproved = () => {
                 </div>
 
                 {/* Pagination */}
-                {!loadingList && exports.length > 0 && (
+                {!loadingList && sales.length > 0 && (
                     <Pagination
                         currentPage={currentPage}
                         totalPages={Math.ceil(totalCount / pageSize)}
@@ -769,42 +877,8 @@ const ExportDashboardImproved = () => {
                     />
                 )}
             </div>
-
-            {/* Liste des navires */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <Ship className="w-5 h-5 text-cyan-600" />
-                    <h2 className="text-lg font-semibold text-gray-900">Navires Récents</h2>
-                </div>
-                {loading ? (
-                    <div className="animate-pulse space-y-3">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="h-12 bg-gray-200 rounded"></div>
-                        ))}
-                    </div>
-                ) : statsByNavire.length === 0 ? (
-                    <p className="text-gray-500 text-center py-8">Aucune donnée disponible</p>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {statsByNavire.slice(0, 9).map((navire, index) => (
-                            <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg border border-cyan-100 hover:shadow-md transition-shadow">
-                                <div>
-                                    <p className="font-semibold text-gray-900">{navire.navire}</p>
-                                    <p className="text-sm text-gray-600">
-                                        Dernier départ: {formatDate(navire.lastDeparture)}
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-2xl font-bold text-cyan-600">{navire.totalDossiers}</p>
-                                    <p className="text-xs text-gray-500">dossiers</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
         </div>
     );
 };
 
-export default ExportDashboardImproved;
+export default SalesDashboard;

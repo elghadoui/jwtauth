@@ -1,4 +1,4 @@
-import { Package, Ship, Globe, Users, Scale, Boxes } from 'lucide-react';
+import { Scale, Boxes } from 'lucide-react';
 
 const ExportStatsCards = ({ stats, loading }) => {
     const formatNumber = (num) => {
@@ -13,25 +13,11 @@ const ExportStatsCards = ({ stats, loading }) => {
 
     const cards = [
         {
-            title: 'Total Dossiers',
-            value: formatNumber(stats?.totalDossiers),
-            icon: Package,
-            color: 'bg-blue-500',
-            bgColor: 'bg-blue-50',
-        },
-        {
             title: 'Total Palettes',
             value: formatNumber(stats?.totalPalettes),
             icon: Boxes,
             color: 'bg-purple-500',
             bgColor: 'bg-purple-50',
-        },
-        {
-            title: 'Total Colis',
-            value: formatNumber(stats?.totalColis),
-            icon: Package,
-            color: 'bg-green-500',
-            bgColor: 'bg-green-50',
         },
         {
             title: 'Poids Total',
@@ -40,33 +26,12 @@ const ExportStatsCards = ({ stats, loading }) => {
             color: 'bg-orange-500',
             bgColor: 'bg-orange-50',
         },
-        {
-            title: 'Navires',
-            value: formatNumber(stats?.navireCount),
-            icon: Ship,
-            color: 'bg-cyan-500',
-            bgColor: 'bg-cyan-50',
-        },
-        {
-            title: 'Pays Destinations',
-            value: formatNumber(stats?.paysCount),
-            icon: Globe,
-            color: 'bg-pink-500',
-            bgColor: 'bg-pink-50',
-        },
-        {
-            title: 'Clients',
-            value: formatNumber(stats?.clientsCount),
-            icon: Users,
-            color: 'bg-indigo-500',
-            bgColor: 'bg-indigo-50',
-        },
     ];
 
     if (loading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {[1, 2, 3, 4].map((i) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {[1, 2].map((i) => (
                     <div key={i} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
                         <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
                         <div className="h-8 bg-gray-200 rounded w-3/4"></div>
@@ -77,7 +42,7 @@ const ExportStatsCards = ({ stats, loading }) => {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {cards.map((card, index) => (
                 <div
                     key={index}
